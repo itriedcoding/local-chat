@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Download — HackerGPT</title>
+<meta name="description" content="Download HackerGPT 1.1.0 for Windows 10 and 11 (x64). Installer or portable build. Verify with the published SHA-256 hashes." />
+<link rel="icon" href="favicon.ico" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><img src="assets/icon.png" alt="HackerGPT" /><span>HackerGPT</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="docs.html">Docs</a>
+      <a href="downloads.html" class="active">Downloads</a>
+      <a class="gh" href="https://github.com/itriedcoding/HackerGPT" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="dl-hero">
+    <span class="eyebrow">Release · v1.1.0</span>
+    <h1 style="font-size:clamp(34px,5vw,54px);letter-spacing:-0.03em">Download HackerGPT</h1>
+    <p class="lead">For Windows 10 and 11, 64-bit. No account required. Bring your own models.</p>
+    <div class="hero-meta">
+      <span><i class="dot"></i> Latest stable</span>
+      <span>x64 · Windows</span>
+      <span>April update</span>
+    </div>
+
+    <div class="dl-grid">
+      <div class="dl-card featured">
+        <span class="tag">Recommended</span>
+        <h3>Windows Installer</h3>
+        <div class="size">HackerGPT Setup 1.1.0.exe · 161.4 MB</div>
+        <ul>
+          <li>Per-user install, no admin required</li>
+          <li>Start menu shortcut and uninstaller</li>
+          <li>Choose your own install folder</li>
+        </ul>
+        <a class="btn primary lg" href="https://github.com/itriedcoding/HackerGPT/releases/latest/download/HackerGPT%20Setup%201.1.0.exe">↓ Download installer</a>
+      </div>
+      <div class="dl-card">
+        <span class="tag">Portable</span>
+        <h3>Portable Build</h3>
+        <div class="size">HackerGPT-Portable-1.1.0.exe · 161.2 MB</div>
+        <ul>
+          <li>Single file, no installation</li>
+          <li>Run from a folder or USB stick</li>
+          <li>Leaves no program files behind</li>
+        </ul>
+        <a class="btn lg" href="https://github.com/itriedcoding/HackerGPT/releases/latest/download/HackerGPT-Portable-1.1.0.exe">↓ Download portable</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" style="border-top:0;padding-top:20px">
+    <div class="section-head" style="margin-bottom:22px">
+      <span class="kicker">// requirements</span>
+      <h2 style="font-size:26px">What you need</h2>
+    </div>
+    <div class="req-grid">
+      <div class="cell">
+        <h4>Operating system</h4>
+        <p>Windows 10 or Windows 11, 64-bit (x64).</p>
+      </div>
+      <div class="cell">
+        <h4>Disk space</h4>
+        <p>About 250 MB for the app, plus room for the models you download (from ~0.5 GB to tens of GB).</p>
+      </div>
+      <div class="cell">
+        <h4>Memory</h4>
+        <p>8 GB minimum for small models; 16 GB or more for comfortable 7–8B models at Q4. GPU offload is optional.</p>
+      </div>
+      <div class="cell">
+        <h4>Also useful</h4>
+        <p>An internet connection to download models. <a href="https://ollama.com" target="_blank" rel="noopener" style="color:var(--fg);text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px">Ollama</a> is optional if you want to reuse your existing models.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head" style="margin-bottom:22px">
+      <span class="kicker">// integrity</span>
+      <h2 style="font-size:26px">Verify your download</h2>
+      <p>Compare the SHA-256 hash of your downloaded file. In PowerShell:</p>
+    </div>
+    <pre class="code">Get-FileHash -Algorithm SHA256 <span class="c">"HackerGPT Setup 1.1.0.exe"</span></pre>
+    <h3 style="font-size:14px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:22px 0 0">Setup 1.1.0</h3>
+    <div class="hashbox">4889c5670f45a7a3642559762a2e7f8f67c03fbd9ab19b210fb28d8f4494f2d4</div>
+    <h3 style="font-size:14px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:22px 0 0">Portable 1.1.0</h3>
+    <div class="hashbox">7cabdb2dbb0d6a89d85028b8f75961b0dd674814a71e682b27f80589f0198420</div>
+  </section>
+
+  <section class="section">
+    <div class="grid cols-2">
+      <div class="cell">
+        <span class="num">WHAT'S IN 1.1.0</span>
+        <h3>Release highlights</h3>
+        <ul style="color:var(--muted);padding-left:20px;margin:10px 0 0">
+          <li>Runs GGUF models locally through a bundled llama.cpp runtime</li>
+          <li>Ollama integration: chat with any model you have pulled</li>
+          <li>Built-in Hugging Face search and model downloads</li>
+          <li>Streaming replies, token/s readout, regeneration</li>
+          <li>Export conversations as Markdown or JSON</li>
+        </ul>
+      </div>
+      <div class="cell">
+        <span class="num">PREFER TO COMPILE IT?</span>
+        <h3>Build from source</h3>
+        <p>HackerGPT is open source. If you would rather build it yourself, clone the repository and run the build:</p>
+        <pre class="code" style="margin-top:14px">git clone https://github.com/itriedcoding/HackerGPT
+cd HackerGPT
+npm install
+npm run dist</pre>
+        <a class="btn" href="https://github.com/itriedcoding/HackerGPT" target="_blank" rel="noopener">View on GitHub <span class="arrow">→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="cta">
+      <h2>Need a hand getting started?</h2>
+      <p>The documentation walks through adding your first model, connecting Ollama, and tuning settings.</p>
+      <a class="btn primary lg" href="docs.html">Go to docs <span class="arrow">→</span></a>
+    </div>
+  </section>
+</div>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-inner">
+      <div>
+        <a class="brand" href="index.html"><img src="assets/icon.png" alt="HackerGPT" /><span>HackerGPT</span></a>
+        <p>A lightweight desktop client for running GGUF models locally. Open, private, and yours.</p>
+      </div>
+      <div>
+        <h5>Product</h5>
+        <a href="index.html">Home</a>
+        <a href="downloads.html">Downloads</a>
+        <a href="docs.html">Documentation</a>
+      </div>
+      <div>
+        <h5>Legal</h5>
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html">Privacy Policy</a>
+      </div>
+      <div>
+        <h5>Built with</h5>
+        <a href="https://huggingface.co" target="_blank" rel="noopener">Hugging Face</a>
+        <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>
+        <a href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">llama.cpp</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 HackerGPT. Provided as-is under the terms of service.</span>
+      <span>HackerGPT is not affiliated with Hugging Face, Ollama, or the llama.cpp project.</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

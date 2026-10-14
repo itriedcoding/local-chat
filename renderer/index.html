@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HackerGPT</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="titlebar">
+  <div class="tb-left">
+    <div class="logo">◼</div>
+    <div class="tb-title">HACKERGPT <span class="tb-sub">/ local gguf chat</span></div>
+  </div>
+  <div class="tb-right">
+    <button id="btnMin" class="tb-btn" title="Minimize">—</button>
+    <button id="btnMax" class="tb-btn" title="Maximize">▢</button>
+    <button id="btnClose" class="tb-btn danger" title="Close">✕</button>
+  </div>
+</div>
+
+<div id="app">
+  <aside id="sidebar">
+    <button id="btnNewChat" class="btn primary">+ NEW CHAT</button>
+    <div class="side-label">ACTIVE MODEL</div>
+    <select id="modelSelect" class="select"></select>
+    <div id="modelStatus" class="status">no model loaded</div>
+    <div class="side-label">CONVERSATIONS</div>
+    <div id="chatList" class="chat-list"></div>
+    <div class="side-footer">
+      <button id="navChat" class="btn nav active">CHAT</button>
+      <button id="navModels" class="btn nav">MODELS</button>
+      <button id="navDiscover" class="btn nav">DISCOVER</button>
+      <button id="navSettings" class="btn nav">SETTINGS</button>
+    </div>
+  </aside>
+
+  <main id="main">
+    <!-- CHAT -->
+    <section id="viewChat" class="view">
+      <div class="chat-toolbar">
+        <div id="chatTitle" class="chat-title">New chat</div>
+        <div class="toolbar-actions">
+          <button id="btnRegen" class="btn small" title="Regenerate last response">↻ REGEN</button>
+          <button id="btnExportMd" class="btn small" title="Export as Markdown">↓ MD</button>
+          <button id="btnExportJson" class="btn small" title="Export as JSON">↓ JSON</button>
+        </div>
+      </div>
+      <div id="messages" class="messages"></div>
+      <div id="composerWrap" class="composer-wrap">
+        <div id="genBar" class="gen-bar hidden">
+          <span id="genLabel">generating…</span>
+          <button id="btnStop" class="btn small">STOP</button>
+        </div>
+        <div class="composer">
+          <textarea id="input" rows="2" placeholder="Type a message… (Enter to send, Shift+Enter for newline)"></textarea>
+          <button id="btnSend" class="btn primary">SEND</button>
+        </div>
+        <div class="hint">local inference · your .gguf never leaves this machine</div>
+      </div>
+    </section>
+
+    <!-- MODELS -->
+    <section id="viewModels" class="view hidden">
+      <div class="page">
+        <h1>MODELS</h1>
+        <p class="muted">Add your own <code>.gguf</code> files, or connect to a local <b>Ollama</b> server.</p>
+        <div class="row">
+          <button id="btnAddModel" class="btn primary">+ ADD GGUF FILE</button>
+          <button id="btnRefreshOllama" class="btn">↻ REFRESH OLLAMA</button>
+          <button id="btnOpenDiscover" class="btn">↓ BROWSE HUGGING FACE</button>
+        </div>
+
+        <h2 class="sec-h">LOCAL GGUF</h2>
+        <div id="modelList" class="model-list"></div>
+
+        <h2 class="sec-h">OLLAMA</h2>
+        <div id="ollamaHint" class="muted"></div>
+        <div id="ollamaList" class="model-list"></div>
+      </div>
+    </section>
+
+    <!-- DISCOVER -->
+    <section id="viewDiscover" class="view hidden">
+      <div class="page">
+        <h1>DISCOVER</h1>
+        <p class="muted">Search GGUF models on <b>Hugging Face</b> and download them straight into this app.</p>
+        <div class="row">
+          <input id="hfQuery" type="text" placeholder="e.g. llama 3.1 instruct gguf, qwen2.5, mistral…" />
+          <button id="btnHfSearch" class="btn primary">SEARCH</button>
+        </div>
+        <div id="hfResults" class="model-list"></div>
+
+        <div id="hfFilesWrap" class="hidden">
+          <h2 class="sec-h" id="hfFilesTitle">FILES</h2>
+          <div id="hfFiles" class="model-list"></div>
+        </div>
+
+        <div id="downloadsWrap" class="hidden">
+          <h2 class="sec-h">DOWNLOADS</h2>
+          <div id="downloads" class="model-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="viewSettings" class="view hidden">
+      <div class="page">
+        <h1>SETTINGS</h1>
+        <p class="muted">Generation + runtime. Changing context / threads / GPU reloads the local model.</p>
+        <label class="field"><span>System prompt</span>
+          <textarea id="sSystem" rows="3"></textarea>
+        </label>
+        <div class="grid2">
+          <label class="field"><span>Temperature <b id="vTemp"></b></span>
+            <input id="sTemp" type="range" min="0" max="2" step="0.05" />
+          </label>
+          <label class="field"><span>Top P <b id="vTopP"></b></span>
+            <input id="sTopP" type="range" min="0" max="1" step="0.01" />
+          </label>
+          <label class="field"><span>Top K</span><input id="sTopK" type="number" min="1" max="200" /></label>
+          <label class="field"><span>Repeat penalty</span><input id="sRep" type="number" step="0.05" min="1" max="2" /></label>
+          <label class="field"><span>Max tokens</span><input id="sMax" type="number" min="64" max="8192" /></label>
+          <label class="field"><span>Context size</span>
+            <select id="sCtx"><option>2048</option><option>4096</option><option>8192</option><option>16384</option><option>32768</option></select>
+          </label>
+          <label class="field"><span>Threads (0 = auto)</span><input id="sThreads" type="number" min="0" max="64" /></label>
+          <label class="field"><span>GPU layers (0 = CPU)</span><input id="sGpu" type="number" min="0" max="128" /></label>
+        </div>
+        <label class="field"><span>Ollama server URL</span>
+          <input id="sOllama" type="text" placeholder="http://127.0.0.1:11434" />
+        </label>
+        <div class="row">
+          <button id="btnSaveSettings" class="btn primary">SAVE SETTINGS</button>
+          <button id="btnResetSettings" class="btn">RESET</button>
+        </div>
+        <div id="settingsMsg" class="muted"></div>
+        <h2 class="danger-h">DANGER ZONE</h2>
+        <div class="row">
+          <button id="btnWipeChats" class="btn danger-outline">DELETE ALL CHATS</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<script src="renderer.js"></script>
+</body>
+</html>

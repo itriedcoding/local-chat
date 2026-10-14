@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HackerGPT — Local AI chat for GGUF models</title>
+<meta name="description" content="HackerGPT is a lightweight desktop chat app that runs GGUF models entirely on your machine via llama.cpp, or connects to your local Ollama server. No accounts, no cloud, no telemetry." />
+<link rel="icon" href="favicon.ico" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><img src="assets/icon.png" alt="HackerGPT" /><span>HackerGPT</span></a>
+    <div class="nav-links">
+      <a href="index.html" class="active">Home</a>
+      <a href="docs.html">Docs</a>
+      <a href="downloads.html">Downloads</a>
+      <a class="gh" href="https://github.com/itriedcoding/HackerGPT" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Offline · Private · Local-first</span>
+    <h1>Chat with AI that<br />never leaves <span class="dim">your machine.</span></h1>
+    <p class="lead">HackerGPT is a lightweight desktop app for running GGUF language models locally through llama.cpp — or connecting to the Ollama server you already use. No account. No API keys. No telemetry.</p>
+    <div class="hero-actions">
+      <a class="btn primary lg" href="downloads.html">Download for Windows <span class="arrow">→</span></a>
+      <a class="btn lg" href="docs.html">Read the docs</a>
+    </div>
+    <div class="hero-meta">
+      <span><i class="dot"></i> v1.1.0</span>
+      <span>Windows 10 / 11 · x64</span>
+      <span>Runs 100% on-device</span>
+      <span>Inference by llama.cpp &amp; Ollama</span>
+    </div>
+
+    <div class="term">
+      <div class="term-bar">
+        <span class="dot3"></span><span class="dot3"></span><span class="dot3"></span>
+        <span class="title">HackerGPT — local session</span>
+      </div>
+      <div class="term-body">
+        <div><span class="mut">·</span> runtime <span class="mut">................</span> <span class="fill">ok</span></div>
+        <div><span class="mut">·</span> backend <span class="mut">................</span> <span class="fill">llama.cpp</span></div>
+        <div><span class="mut">·</span> chat session ready</div>
+        <div>&nbsp;</div>
+        <div><span class="mut">you</span> &nbsp;what can you run?</div>
+        <div><span class="fill">ai</span> &nbsp;&nbsp;&nbsp;Any GGUF model. Pick one in Discover or bring your own file.</div>
+        <div><span class="mut">you</span> &nbsp;does anything go to the cloud?</div>
+        <div><span class="fill">ai</span> &nbsp;&nbsp;&nbsp;No. Inference happens on this device. Nothing is uploaded.</div>
+        <div>&nbsp;</div>
+        <div><span class="cursor"></span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">// capabilities</span>
+      <h2>Everything you need to run models locally.</h2>
+      <p>A real chat client — streaming, settings, exports — without a cloud account standing in the middle.</p>
+    </div>
+    <div class="grid cols-3">
+      <div class="cell">
+        <div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8l7-5 7 5M5 8v8l7 5 7-5V8"/></svg></div>
+        <span class="num">01</span>
+        <h3>Run GGUF natively</h3>
+        <p>Load any GGUF model straight into the app. llama.cpp powers inference on your CPU or GPU — no external runtime to install.</p>
+      </div>
+      <div class="cell">
+        <div class="icon-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+        <span class="num">02</span>
+        <h3>Streaming responses</h3>
+        <p>Tokens appear as they are generated, with a live token-per-second readout so you know exactly how fast your hardware is running.</p>
+      </div>
+      <div class="cell">
+        <div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+        <span class="num">03</span>
+        <h3>Discover models in-app</h3>
+        <p>Search Hugging Face for GGUF models and download them inside HackerGPT, with progress and the ability to cancel at any time.</p>
+      </div>
+      <div class="cell">
+        <div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></div>
+        <span class="num">04</span>
+        <h3>Ollama, optionally</h3>
+        <p>Already running Ollama? HackerGPT detects the server at <span class="mono">127.0.0.1:11434</span> and lets you chat with every model you have pulled.</p>
+      </div>
+      <div class="cell">
+        <div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 20h14"/></svg></div>
+        <span class="num">05</span>
+        <h3>Export your chats</h3>
+        <p>Save any conversation as Markdown or JSON. Copy a single reply with one click, or regenerate the last answer when you want another pass.</p>
+      </div>
+      <div class="cell">
+        <div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></div>
+        <span class="num">06</span>
+        <h3>Full generation control</h3>
+        <p>Set temperature, top-p, top-k, repeat penalty, max tokens and context size per chat — the same knobs the engine actually uses.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">// built on open technology</span>
+      <h2>Standing on the shoulders of open AI.</h2>
+      <p>HackerGPT is a client. The heavy lifting is done by open projects we are proud to depend on and credit.</p>
+    </div>
+    <div class="engines">
+      <div class="engine">
+        <div class="logo-tile"><img class="hf" src="assets/hf-logo.svg" alt="Hugging Face logo" /></div>
+        <h3>Hugging Face</h3>
+        <p>The model hub. HackerGPT searches the Hugging Face API and downloads the GGUF files you choose, streaming directly to your disk.</p>
+        <a class="link" href="https://huggingface.co" target="_blank" rel="noopener">huggingface.co ↗</a>
+      </div>
+      <div class="engine">
+        <div class="logo-tile"><img src="assets/ollama-logo.svg" alt="Ollama logo" /></div>
+        <h3>Ollama</h3>
+        <p>If you already run Ollama locally, HackerGPT talks to its HTTP API and lists every model in your library — no extra setup.</p>
+        <a class="link" href="https://ollama.com" target="_blank" rel="noopener">ollama.com ↗</a>
+      </div>
+      <div class="engine">
+        <div class="logo-tile"><img src="assets/llama-cpp-light.svg" alt="llama.cpp logo" /></div>
+        <h3>llama.cpp</h3>
+        <p>The C/C++ inference engine that makes local LLM chat practical. Bundled into HackerGPT through the node-llama-cpp bindings.</p>
+        <a class="link" href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">github.com/ggml-org/llama.cpp ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">// quickstart</span>
+      <h2>From download to first reply in minutes.</h2>
+    </div>
+    <div class="grid cols-2">
+      <div class="cell">
+        <span class="num">STEP 01</span>
+        <h3>Install HackerGPT</h3>
+        <p>Grab the Windows installer or the portable build from the <a class="inline" href="downloads.html" style="color:var(--fg);text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px">downloads page</a>. No administrator rights are required for the portable version.</p>
+      </div>
+      <div class="cell">
+        <span class="num">STEP 02</span>
+        <h3>Get a model</h3>
+        <p>Open the <b style="color:var(--fg)">Discover</b> tab to search and download a GGUF from Hugging Face, or open <b style="color:var(--fg)">Models</b> to add a local file or use an Ollama model.</p>
+      </div>
+      <div class="cell">
+        <span class="num">STEP 03</span>
+        <h3>Configure the run</h3>
+        <p>Tune context size and generation settings for the way you want the model to think, then load it into memory.</p>
+      </div>
+      <div class="cell">
+        <span class="num">STEP 04</span>
+        <h3>Start chatting</h3>
+        <p>Ask anything. Watch the tokens stream in, regenerate when needed, and export the conversation whenever you like.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="cta">
+      <span class="kicker">// privacy by architecture</span>
+      <h2>Your prompts stay yours.</h2>
+      <p>There is no HackerGPT server. Conversations, settings and models live only on your computer. The only time HackerGPT touches the network is when you ask it to browse or download a model.</p>
+      <div class="hero-actions" style="justify-content:center">
+        <a class="btn primary lg" href="downloads.html">Download HackerGPT <span class="arrow">→</span></a>
+        <a class="btn lg" href="privacy.html">Privacy policy</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-inner">
+      <div>
+        <a class="brand" href="index.html"><img src="assets/icon.png" alt="HackerGPT" /><span>HackerGPT</span></a>
+        <p>A lightweight desktop client for running GGUF models locally. Open, private, and yours.</p>
+      </div>
+      <div>
+        <h5>Product</h5>
+        <a href="index.html">Home</a>
+        <a href="downloads.html">Downloads</a>
+        <a href="docs.html">Documentation</a>
+      </div>
+      <div>
+        <h5>Legal</h5>
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html">Privacy Policy</a>
+      </div>
+      <div>
+        <h5>Built with</h5>
+        <a href="https://huggingface.co" target="_blank" rel="noopener">Hugging Face</a>
+        <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>
+        <a href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">llama.cpp</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 HackerGPT. Provided as-is under the terms of service.</span>
+      <span>HackerGPT is not affiliated with Hugging Face, Ollama, or the llama.cpp project.</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
