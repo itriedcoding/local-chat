@@ -1,4 +1,4 @@
-User-agent: *
+﻿User-agent: *
 Allow: /
 
-Sitemap: https://hackergpt-eta.vercel.app/sitemap.xml
+Sitemap: https://local-chat-desktop.vercel.app/sitemap.xml
