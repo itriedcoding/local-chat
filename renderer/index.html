@@ -3,14 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HackerGPT</title>
+<title>Local Chat</title>
 <link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="../node_modules/codemirror/lib/codemirror.css" />
+<link rel="stylesheet" href="../node_modules/codemirror/addon/dialog/dialog.css" />
+<link rel="stylesheet" href="../node_modules/codemirror/addon/fold/foldgutter.css" />
 </head>
 <body>
 <div id="titlebar">
   <div class="tb-left">
     <div class="logo">◼</div>
-    <div class="tb-title">HACKERGPT <span class="tb-sub">/ local gguf chat</span></div>
+    <div class="tb-title">LOCAL CHAT <span class="tb-sub">/ local ai chat + code</span></div>
   </div>
   <div class="tb-right">
     <button id="btnMin" class="tb-btn" title="Minimize">—</button>
@@ -29,6 +32,7 @@
     <div id="chatList" class="chat-list"></div>
     <div class="side-footer">
       <button id="navChat" class="btn nav active">CHAT</button>
+      <button id="navEditor" class="btn nav">EDITOR</button>
       <button id="navModels" class="btn nav">MODELS</button>
       <button id="navDiscover" class="btn nav">DISCOVER</button>
       <button id="navSettings" class="btn nav">SETTINGS</button>
@@ -48,15 +52,57 @@
       </div>
       <div id="messages" class="messages"></div>
       <div id="composerWrap" class="composer-wrap">
+        <div id="dropHint" class="drop-hint hidden">drop files to attach</div>
         <div id="genBar" class="gen-bar hidden">
           <span id="genLabel">generating…</span>
           <button id="btnStop" class="btn small">STOP</button>
         </div>
+        <div id="attachChips" class="attach-chips hidden"></div>
         <div class="composer">
+          <button id="btnAttach" class="btn attach-btn" title="Attach files — any type except audio/video">📎</button>
           <textarea id="input" rows="2" placeholder="Type a message… (Enter to send, Shift+Enter for newline)"></textarea>
           <button id="btnSend" class="btn primary">SEND</button>
         </div>
-        <div class="hint">local inference · your .gguf never leaves this machine</div>
+        <div class="hint">local inference · your .gguf and files never leave this machine</div>
+      </div>
+    </section>
+
+    <!-- EDITOR -->
+    <section id="viewEditor" class="view hidden">
+      <div class="editor-toolbar">
+        <div class="et-left">
+          <button id="edOpenFolder" class="btn small primary">OPEN FOLDER</button>
+          <button id="edNewFile" class="btn small">+ FILE</button>
+          <button id="edNewFolder" class="btn small">+ FOLDER</button>
+          <button id="edSave" class="btn small primary" disabled>SAVE</button>
+          <button id="edRefresh" class="btn small" title="Refresh tree">↻</button>
+        </div>
+        <div class="et-right">
+          <span id="edFileLabel" class="ed-file-label muted">no file open</span>
+          <button id="edRename" class="btn small" disabled>RENAME</button>
+          <button id="edDelete" class="btn small" disabled>DELETE</button>
+          <button id="edReveal" class="btn small" disabled>REVEAL</button>
+        </div>
+      </div>
+      <div class="editor-body">
+        <div class="editor-side">
+          <div id="edRootName" class="editor-root">no folder open</div>
+          <div id="edTree" class="editor-tree"></div>
+        </div>
+        <div class="editor-main">
+          <div id="edWelcome" class="editor-welcome">
+            <h2>CODE EDITOR</h2>
+            <p class="muted">Open a folder to build anything — apps, websites, scripts — in any language.</p>
+            <button id="edOpenFolder2" class="btn primary">OPEN FOLDER</button>
+          </div>
+          <div id="edWrap" class="ed-wrap hidden">
+            <textarea id="edArea"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="editor-status">
+        <span id="edStatus">ready</span>
+        <span id="edCursor"></span>
       </div>
     </section>
 
@@ -145,6 +191,35 @@
 </div>
 
 <div id="toast" class="toast hidden"></div>
+
+<div id="ctxMenu" class="ctx-menu hidden"></div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <div id="modalTitle" class="modal-title">Title</div>
+    <input id="modalInput" type="text" />
+    <div class="modal-actions">
+      <button id="modalCancel" class="btn">CANCEL</button>
+      <button id="modalOk" class="btn primary">OK</button>
+    </div>
+  </div>
+</div>
+
+<script src="../node_modules/codemirror/lib/codemirror.js"></script>
+<script src="../node_modules/codemirror/mode/meta.js"></script>
+<script src="../node_modules/codemirror/addon/edit/closebrackets.js"></script>
+<script src="../node_modules/codemirror/addon/edit/matchbrackets.js"></script>
+<script src="../node_modules/codemirror/addon/comment/comment.js"></script>
+<script src="../node_modules/codemirror/addon/search/searchcursor.js"></script>
+<script src="../node_modules/codemirror/addon/search/search.js"></script>
+<script src="../node_modules/codemirror/addon/search/jump-to-line.js"></script>
+<script src="../node_modules/codemirror/addon/dialog/dialog.js"></script>
+<script src="../node_modules/codemirror/addon/selection/active-line.js"></script>
+<script src="../node_modules/codemirror/addon/fold/foldcode.js"></script>
+<script src="../node_modules/codemirror/addon/fold/foldgutter.js"></script>
+<script src="../node_modules/codemirror/addon/fold/brace-fold.js"></script>
+<script src="../node_modules/codemirror/addon/fold/indent-fold.js"></script>
+<script src="../node_modules/codemirror/addon/fold/comment-fold.js"></script>
 <script src="renderer.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
-// Generates build/icon.ico — pure black/white HackerGPT mark, anti-aliased.
-// Mark: rounded black tile, white bold "H", white terminal cursor bar.
+// Generates build/icon.ico — pure black/white Local Chat mark, anti-aliased.
+// Mark: rounded black tile, white speech bubble with a tail and three typing dots.
 // No external assets, no dependencies.
 const fs = require("fs");
 const path = require("path");
@@ -37,19 +37,37 @@ function inRoundRect(px, py, x0, y0, x1, y1, r) {
 function inRect(px, py, x0, y0, x1, y1) {
   return px >= x0 && px <= x1 && py >= y0 && py <= y1;
 }
+function inTriangle(px, py, ax, ay, bx, by, cx, cy) {
+  const d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
+  const d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
+  const d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
+  const hasNeg = d1 < 0 || d2 < 0 || d3 < 0;
+  const hasPos = d1 > 0 || d2 > 0 || d3 > 0;
+  return !(hasNeg && hasPos);
+}
+function inCircle(px, py, cx, cy, r) {
+  const dx = px - cx, dy = py - cy;
+  return dx * dx + dy * dy <= r * r;
+}
 
-// shapes are normalized 0..1 rectangles/rounded rects
+// shapes are normalized 0..1
 const tile = { x0: 0.02, y0: 0.02, x1: 0.98, y1: 0.98, r: 0.2 };
-const white = [
-  // "H" left stem
-  { x0: 0.30, y0: 0.24, x1: 0.395, y1: 0.62 },
-  // "H" right stem
-  { x0: 0.605, y0: 0.24, x1: 0.70, y1: 0.62 },
-  // "H" crossbar
-  { x0: 0.395, y0: 0.40, x1: 0.605, y1: 0.465 },
-  // terminal cursor bar (below-right)
-  { x0: 0.605, y0: 0.70, x1: 0.76, y1: 0.765 }
+const bubble = { x0: 0.17, y0: 0.19, x1: 0.83, y1: 0.66, r: 0.14 };
+// speech bubble tail (bottom-left)
+const tail = [0.30, 0.58, 0.30, 0.83, 0.51, 0.58];
+// typing dots (black cut-outs)
+const dots = [
+  { x: 0.355, y: 0.425, r: 0.05 },
+  { x: 0.50, y: 0.425, r: 0.05 },
+  { x: 0.645, y: 0.425, r: 0.05 }
 ];
+function inWhite(u, v) {
+  const inBubble = inRoundRect(u, v, bubble.x0, bubble.y0, bubble.x1, bubble.y1, bubble.r);
+  const inTail = inTriangle(u, v, tail[0], tail[1], tail[2], tail[3], tail[4], tail[5]);
+  if (!inBubble && !inTail) return false;
+  for (const d of dots) if (inCircle(u, v, d.x, d.y, d.r)) return false;
+  return true;
+}
 
 function png(size) {
   const S = 4; // supersample
@@ -63,9 +81,7 @@ function png(size) {
           const v = (y + (sy + 0.5) / S) / size;
           if (inRoundRect(u, v, tile.x0, tile.y0, tile.x1, tile.y1, tile.r)) {
             tileCov++;
-            for (const w of white) {
-              if (inRect(u, v, w.x0, w.y0, w.x1, w.y1)) { whiteCov++; break; }
-            }
+            if (inWhite(u, v)) whiteCov++;
           }
         }
       }

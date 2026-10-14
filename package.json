@@ -1,8 +1,8 @@
 {
-  "name": "hackergpt",
-  "version": "1.1.0",
-  "description": "Lightweight desktop AI chat for local GGUF models",
-  "author": "HackerGPT",
+  "name": "local-chat",
+  "version": "2.0.0",
+  "description": "Local, private desktop AI chat with a built-in code editor for any language",
+  "author": "Local Chat",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -11,6 +11,8 @@
     "icon": "node build/gen-icon.js"
   },
   "dependencies": {
+    "adm-zip": "^0.5.18",
+    "codemirror": "^5.65.21",
     "node-llama-cpp": "^3.8.1"
   },
   "devDependencies": {
@@ -18,8 +20,8 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "com.hackergpt.desktop",
-    "productName": "HackerGPT",
+    "appId": "com.localchat.desktop",
+    "productName": "Local Chat",
     "icon": "build/icon.ico",
     "files": [
       "main.js",
@@ -53,13 +55,13 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "HackerGPT",
-      "artifactName": "HackerGPT-Setup-${version}.exe",
+      "shortcutName": "Local Chat",
+      "artifactName": "Local-Chat-Setup-${version}.exe",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico"
     },
     "portable": {
-      "artifactName": "HackerGPT-Portable-${version}.exe"
+      "artifactName": "Local-Chat-Portable-${version}.exe"
     }
   }
 }

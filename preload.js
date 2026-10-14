@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
   minimize: () => ipcRenderer.invoke("app:minimize"),
@@ -29,6 +29,19 @@ contextBridge.exposeInMainWorld("api", {
 
   sendChat: (payload) => ipcRenderer.invoke("chat:send", payload),
   stopChat: (requestId) => ipcRenderer.invoke("chat:stop", requestId),
+
+  editorOpenFolder: () => ipcRenderer.invoke("editor:open-folder"),
+  editorList: () => ipcRenderer.invoke("editor:list"),
+  editorRead: (p) => ipcRenderer.invoke("editor:read", p),
+  editorWrite: (payload) => ipcRenderer.invoke("editor:write", payload),
+  editorCreate: (payload) => ipcRenderer.invoke("editor:create", payload),
+  editorRename: (payload) => ipcRenderer.invoke("editor:rename", payload),
+  editorDelete: (p) => ipcRenderer.invoke("editor:delete", p),
+  editorReveal: (p) => ipcRenderer.invoke("editor:reveal", p),
+
+  attachPick: () => ipcRenderer.invoke("attach:pick"),
+  attachDescribe: (paths) => ipcRenderer.invoke("attach:describe", paths),
+  filePath: (file) => webUtils.getPathForFile(file),
 
   onStarted: (cb) => ipcRenderer.on("chat:started", (_e, d) => cb(d)),
   onToken: (cb) => ipcRenderer.on("chat:token", (_e, d) => cb(d)),

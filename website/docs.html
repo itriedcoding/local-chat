@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Documentation — HackerGPT</title>
-<meta name="description" content="Install HackerGPT, load GGUF models from disk or Hugging Face, connect Ollama, tune generation settings, and export conversations." />
+<title>Documentation — Local Chat</title>
+<meta name="description" content="Install Local Chat, load GGUF models from disk or Hugging Face, connect Ollama, tune generation settings, and export conversations." />
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" href="styles.css" />
 </head>
@@ -12,12 +12,12 @@
 
 <nav class="nav">
   <div class="nav-inner">
-    <a class="brand" href="index.html"><img src="assets/icon.png" alt="HackerGPT" /><span>HackerGPT</span></a>
+    <a class="brand" href="index.html"><img src="assets/icon.png" alt="Local Chat" /><span>Local Chat</span></a>
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="docs.html" class="active">Docs</a>
       <a href="downloads.html">Downloads</a>
-      <a class="gh" href="https://github.com/itriedcoding/HackerGPT" target="_blank" rel="noopener">GitHub ↗</a>
+      <a class="gh" href="https://github.com/itriedcoding/local-chat" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
   </div>
 </nav>
@@ -32,6 +32,8 @@
       <a href="#discover">Downloading from Hugging Face</a>
       <a href="#ollama">Using Ollama</a>
       <a href="#chat">Chatting</a>
+      <a href="#editor">Code editor</a>
+      <a href="#attach">Attaching files</a>
       <a href="#settings">Settings reference</a>
       <a href="#export">Exporting chats</a>
       <a href="#data">Your data</a>
@@ -41,33 +43,33 @@
 
     <article class="doc-body">
       <h2 id="overview">Overview</h2>
-      <p>HackerGPT is a desktop chat client that runs language models on your own computer. It supports two backends:</p>
+      <p>Local Chat is a desktop chat client that runs language models on your own computer. It supports two backends:</p>
       <ul>
         <li><b style="color:var(--fg)">llama.cpp</b> (bundled through node-llama-cpp) — load a <code>.gguf</code> file directly and chat with it offline.</li>
         <li><b style="color:var(--fg)">Ollama</b> (optional) — connect to a local Ollama server and use any model you have pulled.</li>
       </ul>
-      <p>The interface has four tabs: <b style="color:var(--fg)">Chat</b>, <b style="color:var(--fg)">Models</b>, <b style="color:var(--fg)">Discover</b>, and <b style="color:var(--fg)">Settings</b>.</p>
+      <p>The interface has five tabs: <b style="color:var(--fg)">Chat</b>, <b style="color:var(--fg)">Editor</b>, <b style="color:var(--fg)">Models</b>, <b style="color:var(--fg)">Discover</b>, and <b style="color:var(--fg)">Settings</b>.</p>
 
       <h2 id="install">Installation</h2>
-      <p>HackerGPT ships as a 64-bit Windows application. You can use the installer or the portable build — both are on the <a class="inline" href="downloads.html">downloads page</a>.</p>
+      <p>Local Chat ships as a 64-bit Windows application. You can use the installer or the portable build — both are on the <a class="inline" href="downloads.html">downloads page</a>.</p>
       <h3>Installer</h3>
       <ol style="color:var(--muted);padding-left:20px">
-        <li>Download <code>HackerGPT-Setup-1.1.0.exe</code> and run it.</li>
+        <li>Download <code>Local-Chat-Setup-2.0.0.exe</code> and run it.</li>
         <li>The installer is per-user and does not require administrator rights. Choose a folder if you like, then finish.</li>
-        <li>Launch HackerGPT from the Start menu shortcut.</li>
+        <li>Launch Local Chat from the Start menu shortcut.</li>
       </ol>
       <h3>Portable</h3>
       <p>The portable build is a single <code>.exe</code> with no installation step. Put it anywhere and run it directly — handy for a USB stick or a locked-down machine.</p>
-      <div class="callout"><b>First launch:</b> no model is loaded yet. HackerGPT will tell you to add one. Head to the next section.</div>
+      <div class="callout"><b>First launch:</b> no model is loaded yet. Local Chat will tell you to add one. Head to the next section.</div>
 
       <h2 id="models">Getting models</h2>
-      <p>There are three ways to get a model into HackerGPT.</p>
+      <p>There are three ways to get a model into Local Chat.</p>
 
       <h3>1. Download from Hugging Face (in-app)</h3>
-      <p>Open the <b style="color:var(--fg)">Discover</b> tab, search, and download. Files are saved to HackerGPT's own models folder and registered automatically. See <a class="inline" href="#discover">Downloading from Hugging Face</a>.</p>
+      <p>Open the <b style="color:var(--fg)">Discover</b> tab, search, and download. Files are saved to Local Chat's own models folder and registered automatically. See <a class="inline" href="#discover">Downloading from Hugging Face</a>.</p>
 
       <h3>2. Add a GGUF file you already have</h3>
-      <p>On the <b style="color:var(--fg)">Models</b> tab, click <b style="color:var(--fg)">+ ADD GGUF FILE</b> and pick a <code>.gguf</code> file anywhere on disk. HackerGPT records its path and makes it available in the model selector. Use <b style="color:var(--fg)">REVEAL</b> to open a model's folder and <b style="color:var(--fg)">DELETE FILE</b> to remove the file itself.</p>
+      <p>On the <b style="color:var(--fg)">Models</b> tab, click <b style="color:var(--fg)">+ ADD GGUF FILE</b> and pick a <code>.gguf</code> file anywhere on disk. Local Chat records its path and makes it available in the model selector. Use <b style="color:var(--fg)">REVEAL</b> to open a model's folder and <b style="color:var(--fg)">DELETE FILE</b> to remove the file itself.</p>
 
       <h3>3. Use an Ollama model</h3>
       <p>If you already have Ollama running, its models appear on the Models tab under <b style="color:var(--fg)">OLLAMA</b>. See <a class="inline" href="#ollama">Using Ollama</a>.</p>
@@ -85,17 +87,17 @@
       <ol style="color:var(--muted);padding-left:20px">
         <li>Go to <b style="color:var(--fg)">Discover</b>.</li>
         <li>Type a query such as <code>llama 3.1 instruct gguf</code> or <code>qwen2.5</code> and press <b style="color:var(--fg)">SEARCH</b>. Results are sorted by downloads.</li>
-        <li>Pick a repository; HackerGPT lists its files and marks which ones are <code>.gguf</code>.</li>
+        <li>Pick a repository; Local Chat lists its files and marks which ones are <code>.gguf</code>.</li>
         <li>Click a file to download it. A progress bar shows percentage and speed, and you can <b style="color:var(--fg)">CANCEL</b> at any time.</li>
         <li>When it finishes, the model is added to your library and selectable from the sidebar.</li>
       </ol>
-      <div class="callout">This is the only time HackerGPT uses the internet on its own behalf: it calls the Hugging Face API to list models and files, and their CDN to download the file you chose. Nothing about your chats is sent.</div>
+      <div class="callout">This is the only time Local Chat uses the internet on its own behalf: it calls the Hugging Face API to list models and files, and their CDN to download the file you chose. Nothing about your chats is sent.</div>
 
       <h2 id="ollama">Using Ollama</h2>
-      <p>HackerGPT can drive an Ollama server running on your machine. Install Ollama from <a class="inline" href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a>, then pull a model, for example:</p>
+      <p>Local Chat can drive an Ollama server running on your machine. Install Ollama from <a class="inline" href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a>, then pull a model, for example:</p>
       <pre class="code">ollama pull llama3.1</pre>
       <ul>
-        <li>In HackerGPT, open <b style="color:var(--fg)">Models</b> and click <b style="color:var(--fg)">↻ REFRESH OLLAMA</b>. Your pulled models appear under the Ollama section.</li>
+        <li>In Local Chat, open <b style="color:var(--fg)">Models</b> and click <b style="color:var(--fg)">↻ REFRESH OLLAMA</b>. Your pulled models appear under the Ollama section.</li>
         <li>Ollama runs at <code>http://127.0.0.1:11434</code> by default. Change it under <b style="color:var(--fg)">Settings → Ollama server URL</b> if you run it on another port or host.</li>
         <li>Ollama models are prefixed and tagged <span class="tag-pill" style="padding:2px 9px">ollama</span> in the model list.</li>
       </ul>
@@ -111,6 +113,41 @@
         <li>Hover a message and use <b style="color:var(--fg)">copy</b> to put its text on the clipboard.</li>
         <li><b style="color:var(--fg)">+ NEW CHAT</b> starts a fresh conversation; all conversations are listed in the sidebar and stored locally.</li>
       </ul>
+
+      <h2 id="editor">Code editor</h2>
+      <p>Local Chat ships with a built-in code editor so you can build projects, apps, websites and scripts without leaving the app. It works with any text-based language.</p>
+      <ol style="color:var(--muted);padding-left:20px">
+        <li>Open the <b style="color:var(--fg)">Editor</b> tab.</li>
+        <li>Click <b style="color:var(--fg)">OPEN FOLDER</b> and choose a project directory. The file tree appears on the left.</li>
+        <li>Click a file to open it. Syntax highlighting is chosen automatically from the file extension.</li>
+        <li>Edit, then press <kbd>Ctrl</kbd>+<kbd>S</kbd> (or the <b style="color:var(--fg)">SAVE</b> button) to write the file to disk.</li>
+      </ol>
+      <h3>Toolbar</h3>
+      <ul>
+        <li><b style="color:var(--fg)">OPEN FOLDER</b> — choose the project directory.</li>
+        <li><b style="color:var(--fg)">+ FILE</b> / <b style="color:var(--fg)">+ FOLDER</b> — create an entry in the current folder.</li>
+        <li><b style="color:var(--fg)">SAVE</b> — write the open file (also <kbd>Ctrl</kbd>+<kbd>S</kbd>).</li>
+        <li><b style="color:var(--fg)">RENAME</b> / <b style="color:var(--fg)">DELETE</b> — act on the open file; deleting sends it to the Recycle Bin.</li>
+        <li><b style="color:var(--fg)">REVEAL</b> — show the file in Windows Explorer.</li>
+      </ul>
+      <h3>Editing and shortcuts</h3>
+      <ul>
+        <li><kbd>Ctrl</kbd>+<kbd>F</kbd> find, <kbd>Ctrl</kbd>+<kbd>H</kbd> replace, <kbd>Ctrl</kbd>+<kbd>/</kbd> toggle comment.</li>
+        <li>Brackets auto-close and matching brackets are highlighted.</li>
+        <li>Right-click a file or folder in the tree for <b style="color:var(--fg)">New</b>, <b style="color:var(--fg)">Rename</b>, <b style="color:var(--fg)">Delete</b> and <b style="color:var(--fg)">Reveal</b>.</li>
+        <li>Common heavy folders such as <code>node_modules</code> and <code>.git</code> are hidden from the tree for speed.</li>
+      </ul>
+      <div class="callout">All file operations are scoped to the folder you opened, so the editor only touches files inside your project.</div>
+
+      <h2 id="attach">Attaching files</h2>
+      <p>You can give the model extra context by attaching files to a message. Click the <b style="color:var(--fg)">📎</b> button in the composer, or drag files onto the chat.</p>
+      <ul>
+        <li><b style="color:var(--fg)">Text and code</b> files are read and included in the prompt so the model can see their contents.</li>
+        <li><b style="color:var(--fg)">Archives</b> such as <code>.zip</code> are listed entry by entry (names and sizes).</li>
+        <li><b style="color:var(--fg)">Other binary files</b> (for example <code>.exe</code>) are attached by name and size; their bytes are not sent to the model.</li>
+        <li><b style="color:var(--fg)">Audio and video</b> files are declined — they are not supported.</li>
+      </ul>
+      <div class="callout">Attachments stay on your device. Their contents are only placed into the prompt for the generation you send, and large text is trimmed to keep within the model's context window.</div>
 
       <h2 id="settings">Settings reference</h2>
       <p>Open the <b style="color:var(--fg)">Settings</b> tab. Values are saved to disk and applied to new generations.</p>
@@ -138,8 +175,8 @@
       <p>A save dialog lets you choose where to write the file.</p>
 
       <h2 id="data">Your data</h2>
-      <p>HackerGPT keeps everything under your Windows user data directory, in a folder named <code>hackergpt</code>:</p>
-      <pre class="code"><span class="c">%APPDATA%\hackergpt\</span>
+      <p>Local Chat keeps everything under your Windows user data directory, in a folder named <code>Local Chat</code>:</p>
+      <pre class="code"><span class="c">%APPDATA%\Local Chat\</span>
 ├─ settings.json   <span class="c"># your generation + runtime settings</span>
 ├─ models.json     <span class="c"># the models you added</span>
 ├─ chats.json      <span class="c"># your conversations (most recent 300)</span>
@@ -147,7 +184,7 @@
       <p>There is no account and no cloud sync. See the <a class="inline" href="privacy.html">privacy policy</a> for the full picture.</p>
 
       <h2 id="build">Build from source</h2>
-      <p>HackerGPT is an Electron app. With Node.js and npm installed:</p>
+      <p>Local Chat is an Electron app. With Node.js and npm installed:</p>
       <pre class="code"><span class="c"># install dependencies</span>
 npm install
 
@@ -168,10 +205,10 @@ npm run dist</pre>
       <h3>A download fails or stalls</h3>
       <p>Cancel it and retry — large files over a slow connection can time out. Check that you have free disk space.</p>
       <h3>Where do downloaded models go?</h3>
-      <p>Into <code>%APPDATA%\hackergpt\models\</code>. Use <b style="color:var(--fg)">REVEAL</b> on a model to open that folder.</p>
+      <p>Into <code>%APPDATA%\Local Chat\models\</code>. Use <b style="color:var(--fg)">REVEAL</b> on a model to open that folder.</p>
 
       <hr />
-      <p class="kicker">Still stuck? Open an issue on <a class="inline" href="https://github.com/itriedcoding/HackerGPT/issues" target="_blank" rel="noopener">GitHub</a>.</p>
+      <p class="kicker">Still stuck? Open an issue on <a class="inline" href="https://github.com/itriedcoding/local-chat/issues" target="_blank" rel="noopener">GitHub</a>.</p>
     </article>
   </div>
 </div>
@@ -180,7 +217,7 @@ npm run dist</pre>
   <div class="wrap">
     <div class="footer-inner">
       <div>
-        <a class="brand" href="index.html"><img src="assets/icon.png" alt="HackerGPT" /><span>HackerGPT</span></a>
+        <a class="brand" href="index.html"><img src="assets/icon.png" alt="Local Chat" /><span>Local Chat</span></a>
         <p>A lightweight desktop client for running GGUF models locally. Open, private, and yours.</p>
       </div>
       <div>
@@ -202,8 +239,8 @@ npm run dist</pre>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>© 2026 HackerGPT. Provided as-is under the terms of service.</span>
-      <span>HackerGPT is not affiliated with Hugging Face, Ollama, or the llama.cpp project.</span>
+      <span>© 2026 Local Chat. Provided as-is under the terms of service.</span>
+      <span>Local Chat is not affiliated with Hugging Face, Ollama, or the llama.cpp project.</span>
     </div>
   </div>
 </footer>

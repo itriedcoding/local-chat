@@ -2,6 +2,9 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
+app.setName("Local Chat");
+app.setAppUserModelId("com.localchat.desktop");
+
 let mainWindow = null;
 
 // ---------- storage ----------
@@ -274,7 +277,7 @@ ipcMain.handle("hf:search", async (_e, query) => {
   const q = String(query || "").trim();
   if (!q) return [];
   const url = "https://huggingface.co/api/models?filter=gguf&search=" + encodeURIComponent(q) + "&limit=24&full=false&sort=downloads&direction=-1";
-  const res = await fetch(url, { headers: { "User-Agent": "HackerGPT" } });
+  const res = await fetch(url, { headers: { "User-Agent": "LocalChat" } });
   if (!res.ok) throw new Error("Hugging Face responded " + res.status);
   const data = await res.json();
   return (Array.isArray(data) ? data : []).map((m) => ({
@@ -286,7 +289,7 @@ ipcMain.handle("hf:search", async (_e, query) => {
 });
 ipcMain.handle("hf:files", async (_e, modelId) => {
   const url = "https://huggingface.co/api/models/" + modelId + "/tree/main?recursive=true";
-  const res = await fetch(url, { headers: { "User-Agent": "HackerGPT" } });
+  const res = await fetch(url, { headers: { "User-Agent": "LocalChat" } });
   if (!res.ok) throw new Error("Hugging Face responded " + res.status);
   const data = await res.json();
   const out = [];
@@ -304,7 +307,7 @@ ipcMain.handle("hf:download", async (e, { downloadId, modelId, filePath, fileNam
   activeDownloads.set(downloadId, controller);
   const wc = e.sender;
   try {
-    const res = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "HackerGPT" }, redirect: "follow" });
+    const res = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "LocalChat" }, redirect: "follow" });
     if (!res.ok) throw new Error("Download failed: HTTP " + res.status);
     const total = Number(res.headers.get("content-length")) || 0;
     const reader = res.body.getReader();
@@ -490,4 +493,172 @@ ipcMain.handle("chat:stop", (_e, requestId) => {
   const c = abortControllers.get(requestId);
   if (c) { try { c.abort(); } catch {} abortControllers.delete(requestId); return true; }
   return false;
+});
+
+// ---------- code editor ----------
+let editorRoot = null;
+const EDITOR_IGNORE = new Set([
+  "node_modules", ".git", ".hg", ".svn", "dist", "out", ".next", ".nuxt",
+  ".cache", "__pycache__", ".venv", "venv", ".idea", ".DS_Store", "$RECYCLE.BIN"
+]);
+
+function insideRoot(p) {
+  if (!editorRoot || !p) return false;
+  const r = path.resolve(editorRoot);
+  const t = path.resolve(p);
+  return t === r || t.startsWith(r + path.sep);
+}
+
+function buildTree(dir, depth, budget) {
+  if (depth > 9 || budget.n <= 0) return [];
+  let entries;
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return []; }
+  const dirs = [];
+  const files = [];
+  for (const e of entries) {
+    if (budget.n <= 0) break;
+    if (EDITOR_IGNORE.has(e.name)) continue;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      budget.n--;
+      dirs.push({ name: e.name, path: full, dir: true, children: buildTree(full, depth + 1, budget) });
+    } else if (e.isFile()) {
+      budget.n--;
+      let size = 0;
+      try { size = fs.statSync(full).size; } catch {}
+      files.push({ name: e.name, path: full, dir: false, size });
+    }
+  }
+  dirs.sort((a, b) => a.name.localeCompare(b.name));
+  files.sort((a, b) => a.name.localeCompare(b.name));
+  return [...dirs, ...files];
+}
+
+ipcMain.handle("editor:open-folder", async () => {
+  const res = await dialog.showOpenDialog(mainWindow, { title: "Open project folder", properties: ["openDirectory"] });
+  if (res.canceled || !res.filePaths.length) return null;
+  editorRoot = res.filePaths[0];
+  return { root: editorRoot, name: path.basename(editorRoot) || editorRoot };
+});
+ipcMain.handle("editor:list", () => {
+  if (!editorRoot) return null;
+  return { root: editorRoot, name: path.basename(editorRoot) || editorRoot, tree: buildTree(editorRoot, 0, { n: 20000 }) };
+});
+ipcMain.handle("editor:read", (_e, filePath) => {
+  if (!insideRoot(filePath)) throw new Error("File is outside the open project folder.");
+  const st = fs.statSync(filePath);
+  if (!st.isFile()) throw new Error("Not a file.");
+  const name = path.basename(filePath);
+  if (st.size > 8 * 1024 * 1024) return { binary: true, path: filePath, name, size: st.size, content: "" };
+  const buf = fs.readFileSync(filePath);
+  if (buf.includes(0)) return { binary: true, path: filePath, name, size: st.size, content: "" };
+  return { binary: false, path: filePath, name, size: st.size, content: buf.toString("utf8") };
+});
+ipcMain.handle("editor:write", (_e, { filePath, content }) => {
+  if (!insideRoot(filePath)) throw new Error("File is outside the open project folder.");
+  fs.writeFileSync(filePath, String(content == null ? "" : content), "utf8");
+  return { path: filePath, savedAt: Date.now() };
+});
+ipcMain.handle("editor:create", (_e, { dir, name, isDir }) => {
+  if (!editorRoot) throw new Error("Open a folder first.");
+  const base = dir && insideRoot(dir) ? dir : editorRoot;
+  const clean = String(name || "").replace(/[\\/]/g, "").trim();
+  if (!clean) throw new Error("Enter a name.");
+  const target = path.join(base, clean);
+  if (!insideRoot(target)) throw new Error("Invalid path.");
+  if (fs.existsSync(target)) throw new Error("Already exists.");
+  if (isDir) {
+    fs.mkdirSync(target, { recursive: true });
+  } else {
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, "", "utf8");
+  }
+  return { path: target, dir: !!isDir };
+});
+ipcMain.handle("editor:rename", (_e, { targetPath, newName }) => {
+  if (!insideRoot(targetPath)) throw new Error("Outside the open project folder.");
+  const clean = String(newName || "").replace(/[\\/]/g, "").trim();
+  if (!clean) throw new Error("Enter a name.");
+  const dest = path.join(path.dirname(targetPath), clean);
+  if (!insideRoot(dest)) throw new Error("Invalid path.");
+  if (fs.existsSync(dest)) throw new Error("Already exists.");
+  fs.renameSync(targetPath, dest);
+  return { path: dest };
+});
+ipcMain.handle("editor:delete", async (_e, targetPath) => {
+  if (!insideRoot(targetPath)) throw new Error("Outside the open project folder.");
+  if (path.resolve(targetPath) === path.resolve(editorRoot)) throw new Error("Cannot delete the project root.");
+  await shell.trashItem(path.resolve(targetPath));
+  return true;
+});
+ipcMain.handle("editor:reveal", (_e, p) => {
+  if (p && fs.existsSync(p)) shell.showItemInFolder(path.resolve(p));
+});
+
+// ---------- chat file attachments ----------
+const AUDIO_VIDEO = new Set([
+  "mp3", "wav", "ogg", "oga", "m4a", "aac", "flac", "wma", "opus", "aiff", "aif", "alac", "mid", "midi", "amr", "ac3", "mka",
+  "mp4", "m4v", "mkv", "avi", "mov", "qt", "wmv", "flv", "webm", "mpg", "mpeg", "3gp", "3g2", "ts", "m2ts", "vob", "ogv", "rm", "rmvb", "asf"
+]);
+const ZIP_CONTAINERS = new Set(["zip", "jar", "apk", "epub", "docx", "xlsx", "pptx", "odt", "ods", "odp", "war", "aar", "whl"]);
+
+function isProbablyText(buf) {
+  const n = Math.min(buf.length, 8000);
+  if (n === 0) return true;
+  let printable = 0;
+  for (let i = 0; i < n; i++) {
+    const b = buf[i];
+    if (b === 0) return false;
+    if (b === 9 || b === 10 || b === 13 || (b >= 32 && b < 127) || b >= 128) printable++;
+  }
+  return printable / n > 0.9;
+}
+
+function describeAttachment(fp) {
+  const name = path.basename(fp);
+  const ext = path.extname(fp).toLowerCase().replace(".", "");
+  const item = { id: "a_" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36), name, path: fp, ext, size: 0, kind: "binary" };
+  let st;
+  try { st = fs.statSync(fp); } catch (err) { item.kind = "error"; item.error = "Cannot read file."; return item; }
+  item.size = st.size;
+  if (!st.isFile()) { item.kind = "error"; item.error = "Not a file."; return item; }
+  if (AUDIO_VIDEO.has(ext)) { item.kind = "rejected"; item.error = "Audio and video files are not supported."; return item; }
+  try {
+    if (ZIP_CONTAINERS.has(ext) && st.size <= 200 * 1024 * 1024) {
+      try {
+        const AdmZip = require("adm-zip");
+        const zip = new AdmZip(fp);
+        const entries = zip.getEntries();
+        item.kind = "archive";
+        item.entryCount = entries.length;
+        item.entries = entries.slice(0, 400).map((e) => ({ name: e.entryName, size: e.header.size }));
+        item.truncated = entries.length > 400;
+        return item;
+      } catch {
+        // not a valid zip container — fall through to text/binary detection
+      }
+    }
+    if (st.size <= 4 * 1024 * 1024) {
+      const buf = fs.readFileSync(fp);
+      if (isProbablyText(buf)) { item.kind = "text"; item.text = buf.toString("utf8"); return item; }
+    }
+    item.kind = "binary";
+  } catch (err) {
+    item.kind = "error";
+    item.error = String(err?.message || err);
+  }
+  return item;
+}
+
+ipcMain.handle("attach:pick", async () => {
+  const res = await dialog.showOpenDialog(mainWindow, {
+    title: "Attach files",
+    properties: ["openFile", "multiSelections"]
+  });
+  if (res.canceled || !res.filePaths.length) return [];
+  return res.filePaths.map(describeAttachment);
+});
+ipcMain.handle("attach:describe", (_e, paths) => {
+  if (!Array.isArray(paths)) return [];
+  return paths.filter((p) => typeof p === "string" && p).map(describeAttachment);
 });

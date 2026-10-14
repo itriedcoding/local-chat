@@ -13,8 +13,20 @@ const state = {
   hfResults: [],
   hfFiles: [],
   hfModelId: null,
-  downloads: new Map()
+  downloads: new Map(),
+  attachments: []
 };
+
+const editor = {
+  cm: null,
+  root: null,
+  tree: null,
+  currentPath: null,
+  dirty: false,
+  loading: false,
+  expanded: new Set()
+};
+const loadedModes = new Set();
 
 function toast(msg) {
   const t = $("toast");
@@ -39,7 +51,7 @@ function renderMd(src) {
   h = h.replace(/^#{1,3} (.*)$/gm, "<p><b>$1</b></p>");
   h = h.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
   h = h.replace(/`([^`\n]+)`/g, "<code>$1</code>");
-  h = h.replace(/^- (.*)$/gm, "• $1");
+  h = h.replace(/^- (.*)$/gm, "â€¢ $1");
   h = h.replace(/\n/g, "<br>");
   return h;
 }
@@ -58,10 +70,11 @@ function activeChat() {
 
 // ---------- views ----------
 function showView(name) {
-  for (const v of ["Chat", "Models", "Discover", "Settings"]) $("view" + v).classList.add("hidden");
+  for (const v of ["Chat", "Editor", "Models", "Discover", "Settings"]) $("view" + v).classList.add("hidden");
   $("view" + name).classList.remove("hidden");
-  for (const [btn, v] of [["navChat", "Chat"], ["navModels", "Models"], ["navDiscover", "Discover"], ["navSettings", "Settings"]])
+  for (const [btn, v] of [["navChat", "Chat"], ["navEditor", "Editor"], ["navModels", "Models"], ["navDiscover", "Discover"], ["navSettings", "Settings"]])
     $(btn).classList.toggle("active", v === name);
+  if (name === "Editor" && editor.cm) setTimeout(() => editor.cm.refresh(), 0);
 }
 
 // ---------- sidebar ----------
@@ -71,7 +84,7 @@ function renderModelSelect() {
   const list = allModels();
   if (!list.length) {
     const o = document.createElement("option");
-    o.textContent = "No models — add one";
+    o.textContent = "No models â€” add one";
     o.value = "";
     sel.appendChild(o);
     return;
@@ -100,7 +113,7 @@ function renderModelStatus() {
   if (!m) { el.textContent = "no model loaded"; el.classList.remove("ok"); return; }
   el.classList.add("ok");
   const tag = m.type === "ollama" ? "ollama" : "gguf";
-  el.textContent = "● " + m.name + " · " + tag + (m.size ? " · " + fmtSize(m.size) : "");
+  el.textContent = "â— " + m.name + " Â· " + tag + (m.size ? " Â· " + fmtSize(m.size) : "");
 }
 
 // ---------- chats ----------
@@ -112,10 +125,10 @@ function renderChatList() {
     d.className = "chat-item" + (c.id === state.activeChatId ? " active" : "");
     d.innerHTML =
       `<div style="min-width:0"><div class="t">${esc(c.title || "Untitled")}</div>` +
-      `<div class="d">${esc((c.modelName || "") + " · " + (c.messages?.length || 0) + " msgs")}</div></div>`;
+      `<div class="d">${esc((c.modelName || "") + " Â· " + (c.messages?.length || 0) + " msgs")}</div></div>`;
     const x = document.createElement("button");
     x.className = "x";
-    x.textContent = "×";
+    x.textContent = "Ã—";
     x.title = "Delete";
     x.onclick = async (e) => {
       e.stopPropagation();
@@ -142,7 +155,7 @@ function renderMessages(streamingText) {
   if (!chat || !chat.messages.length) {
     const m = activeModel();
     box.innerHTML =
-      `<div class="empty"><h2>HACKERGPT</h2>` +
+      `<div class="empty"><h2>LOCAL CHAT</h2>` +
       (all.length
         ? (m
           ? `<p>Chatting with <code>${esc(m.name)}</code> (${m.type === "ollama" ? "Ollama" : "llama.cpp"}). Everything runs on-device.</p><p>Type below to begin.</p>`
@@ -155,7 +168,7 @@ function renderMessages(streamingText) {
   if (streamingText !== undefined) {
     const div = document.createElement("div");
     div.className = "msg assistant streaming";
-    div.innerHTML = `<div class="who">MODEL</div><div class="bubble">${renderMd(streamingText) || "▌"}</div>`;
+    div.innerHTML = `<div class="who">MODEL</div><div class="bubble">${renderMd(streamingText) || "â–Œ"}</div>`;
     box.appendChild(div);
   }
   box.scrollTop = box.scrollHeight;
@@ -165,6 +178,12 @@ function messageEl(msg, idx, chat) {
   const div = document.createElement("div");
   div.className = "msg " + (msg.role === "user" ? "user" : "assistant");
   div.innerHTML = `<div class="who">${msg.role === "user" ? "YOU" : "MODEL"}</div><div class="bubble">${renderMd(msg.content)}</div>`;
+  if (Array.isArray(msg.attachments) && msg.attachments.length) {
+    const mini = document.createElement("div");
+    mini.className = "attach-mini";
+    mini.innerHTML = msg.attachments.map((a) => `<span>${esc(a.name)}${a.size ? " Â· " + fmtSize(a.size) : ""}</span>`).join("");
+    div.appendChild(mini);
+  }
   const actions = document.createElement("div");
   actions.className = "actions";
   const copy = document.createElement("button");
@@ -192,6 +211,7 @@ function renderAll(streamingText) {
   renderOllamaList();
   renderMessages(streamingText);
   renderDownloads();
+  renderAttachments();
   $("btnSend").disabled = state.generating;
 }
 
@@ -226,7 +246,7 @@ function renderModelList() {
     card.innerHTML =
       `<div style="min-width:0"><div class="name">${esc(m.name)}</div>` +
       `<div class="path">${esc(m.path)}</div>` +
-      `<div class="meta">${fmtSize(m.size)} · gguf${m.source ? " · from " + esc(m.source) : ""}</div></div>`;
+      `<div class="meta">${fmtSize(m.size)} Â· gguf${m.source ? " Â· from " + esc(m.source) : ""}</div></div>`;
     const acts = document.createElement("div");
     acts.className = "actions";
     acts.appendChild(mkBtn(state.settings?.activeModelId === m.id ? "ACTIVE" : "USE", state.settings?.activeModelId === m.id, async () => {
@@ -276,7 +296,7 @@ function renderOllamaList() {
     card.className = "model-card" + (state.settings?.activeModelId === m.id ? " active" : "");
     card.innerHTML =
       `<div style="min-width:0"><div class="name">${esc(m.name)} <span class="tag ollama">OLLAMA</span></div>` +
-      `<div class="meta">${fmtSize(m.size)}${m.details?.parameter_size ? " · " + esc(m.details.parameter_size) : ""}${m.details?.quantization_level ? " · " + esc(m.details.quantization_level) : ""}</div></div>`;
+      `<div class="meta">${fmtSize(m.size)}${m.details?.parameter_size ? " Â· " + esc(m.details.parameter_size) : ""}${m.details?.quantization_level ? " Â· " + esc(m.details.quantization_level) : ""}</div></div>`;
     card.appendChild(mkBtn(state.settings?.activeModelId === m.id ? "ACTIVE" : "USE", state.settings?.activeModelId === m.id, async () => {
       state.settings = await window.api.setActiveModel(m.id); renderAll();
     }));
@@ -294,16 +314,16 @@ function renderHfResults() {
     card.className = "model-card" + (state.hfModelId === r.id ? " active" : "");
     card.innerHTML =
       `<div style="min-width:0"><div class="name">${esc(r.id)}</div>` +
-      `<div class="meta">↓ ${Number(r.downloads).toLocaleString()} · ♥ ${r.likes}</div></div>`;
+      `<div class="meta">â†“ ${Number(r.downloads).toLocaleString()} Â· â™¥ ${r.likes}</div></div>`;
     card.appendChild(mkBtn("VIEW FILES", state.hfModelId === r.id, () => loadHfFiles(r.id)));
     wrap.appendChild(card);
   }
 }
 async function loadHfFiles(id) {
   state.hfModelId = id;
-  $("hfFilesTitle").textContent = "FILES · " + id;
+  $("hfFilesTitle").textContent = "FILES Â· " + id;
   $("hfFilesWrap").classList.remove("hidden");
-  $("hfFiles").innerHTML = `<div class="muted">Loading…</div>`;
+  $("hfFiles").innerHTML = `<div class="muted">Loadingâ€¦</div>`;
   renderHfResults();
   try {
     state.hfFiles = await window.api.hfFiles(id);
@@ -352,7 +372,7 @@ function renderDownloads() {
     const pct = d.total ? Math.min(100, Math.round((d.received / d.total) * 100)) : 0;
     card.innerHTML =
       `<div style="min-width:0;flex:1"><div class="name">${esc(d.name)}</div>` +
-      `<div class="meta">${d.status === "downloading" ? `${fmtSize(d.received)}${d.total ? " / " + fmtSize(d.total) : ""} · ${pct}%` : d.status}</div>` +
+      `<div class="meta">${d.status === "downloading" ? `${fmtSize(d.received)}${d.total ? " / " + fmtSize(d.total) : ""} Â· ${pct}%` : d.status}</div>` +
       `<div class="dl-track"><div class="dl-fill" style="width:${pct}%"></div></div></div>`;
     if (d.status === "downloading") {
       card.appendChild(mkBtn("CANCEL", false, () => window.api.hfCancel(d.downloadId)));
@@ -366,18 +386,27 @@ let streamBuf = "";
 async function send() {
   if (state.generating) return;
   const text = $("input").value.trim();
-  if (!text) return;
+  const atts = state.attachments.slice();
+  if (!text && !atts.length) return;
   const m = activeModel();
   if (!m) { toast("Add or select a model first."); showView("Models"); return; }
   let chat = activeChat();
   if (!chat) chat = await createChat();
   chat.modelId = m.id;
   chat.modelName = m.name;
-  chat.messages.push({ role: "user", content: text });
-  if (chat.messages.length === 1) chat.title = text.slice(0, 42);
+  const block = buildAttachmentBlock(atts);
+  chat.messages.push({
+    role: "user",
+    content: text || "(attached files)",
+    attachments: atts.map((a) => ({ name: a.name, kind: a.kind, size: a.size, ext: a.ext })),
+    context: block ? block + text : text
+  });
+  if (chat.messages.length === 1) chat.title = (text || (atts[0] && atts[0].name) || "New chat").slice(0, 42);
   chat.updatedAt = Date.now();
   $("input").value = "";
   autoGrow();
+  state.attachments = [];
+  renderAttachments();
   await generate(chat);
 }
 
@@ -400,16 +429,16 @@ async function generate(chat) {
   state.genStart = Date.now();
   state.genTokens = 0;
   $("genBar").classList.remove("hidden");
-  $("genLabel").textContent = "generating with " + m.name + "…";
+  $("genLabel").textContent = "generating with " + m.name + "â€¦";
   renderAll("");
   const last = chat.messages[chat.messages.length - 1];
-  const history = chat.messages.slice(0, -1).map((x) => ({ role: x.role, content: x.content }));
+  const history = chat.messages.slice(0, -1).map((x) => ({ role: x.role, content: x.context || x.content }));
   try {
     await window.api.sendChat({
       requestId: state.activeRequestId,
       chatId: chat.id,
       model: m,
-      message: last.content,
+      message: last.context || last.content,
       history
     });
   } catch (err) {
@@ -429,7 +458,7 @@ function wireStreaming() {
     streamBuf += token;
     state.genTokens++;
     const secs = Math.max(0.001, (Date.now() - state.genStart) / 1000);
-    $("genLabel").textContent = `generating… ${state.genTokens} tok · ${(state.genTokens / secs).toFixed(1)} tok/s`;
+    $("genLabel").textContent = `generatingâ€¦ ${state.genTokens} tok Â· ${(state.genTokens / secs).toFixed(1)} tok/s`;
     renderMessages(streamBuf);
   });
   window.api.onDone(async ({ requestId, full }) => {
@@ -500,6 +529,370 @@ function autoGrow() {
   el.style.height = Math.min(el.scrollHeight, 160) + "px";
 }
 
+// ---------- attachments ----------
+const ATTACH_TEXT_CAP = 120000;
+function attachKindLabel(kind) {
+  return ({ text: "TXT", archive: "ZIP", binary: "BIN", rejected: "SKIP", error: "ERR" })[kind] || "FILE";
+}
+function renderAttachments() {
+  const wrap = $("attachChips");
+  wrap.innerHTML = "";
+  if (!state.attachments.length) { wrap.classList.add("hidden"); return; }
+  wrap.classList.remove("hidden");
+  for (const a of state.attachments) {
+    const chip = document.createElement("div");
+    chip.className = "attach-chip" + (a.kind === "rejected" || a.kind === "error" ? " err" : "");
+    chip.innerHTML =
+      `<span class="k">${attachKindLabel(a.kind)}</span>` +
+      `<span class="nm" title="${esc(a.name)}">${esc(a.name)}</span>` +
+      `<span class="k">${fmtSize(a.size)}</span>`;
+    const x = document.createElement("button");
+    x.className = "x";
+    x.textContent = "Ã—";
+    x.title = "Remove";
+    x.onclick = () => { state.attachments = state.attachments.filter((k) => k.id !== a.id); renderAttachments(); };
+    chip.appendChild(x);
+    wrap.appendChild(chip);
+  }
+}
+function addAttachments(items) {
+  if (!Array.isArray(items) || !items.length) return;
+  let rejected = 0, added = 0;
+  for (const it of items) {
+    if (!it || !it.id) continue;
+    if (it.kind === "rejected") { rejected++; continue; }
+    if (state.attachments.find((k) => k.path === it.path)) continue;
+    state.attachments.push(it);
+    added++;
+  }
+  renderAttachments();
+  if (rejected) toast("Skipped " + rejected + " audio/video file(s) â€” not supported.");
+  else if (added) toast(added + " file(s) attached.");
+}
+async function pickAttachments() {
+  try { addAttachments(await window.api.attachPick()); }
+  catch (err) { toast("Attach failed: " + (err?.message || err)); }
+}
+function buildAttachmentBlock(list) {
+  if (!list || !list.length) return "";
+  let budget = ATTACH_TEXT_CAP;
+  const parts = [];
+  for (const a of list) {
+    const head = `--- file: ${a.name} (${attachKindLabel(a.kind).toLowerCase()}, ${fmtSize(a.size)}) ---`;
+    let body;
+    if (a.kind === "text") {
+      let t = a.text || "";
+      if (t.length > budget) t = t.slice(0, Math.max(0, budget)) + "\nâ€¦[truncated]";
+      budget -= Math.min(t.length, Math.max(0, budget));
+      body = t;
+    } else if (a.kind === "archive") {
+      const lines = (a.entries || []).map((e) => `${String(e.size).padStart(9)}  ${e.name}`);
+      body = `archive contains ${a.entryCount} entr${a.entryCount === 1 ? "y" : "ies"}` +
+        (a.truncated ? " (showing first 400)" : "") + ":\n" + lines.join("\n");
+    } else if (a.kind === "binary") {
+      body = "binary file (contents not shown)";
+    } else {
+      body = a.error || "unavailable";
+    }
+    parts.push(head + "\n" + body);
+  }
+  return "Attached files:\n\n" + parts.join("\n\n") + "\n\n";
+}
+
+// ---------- modal / context menu ----------
+function askModal(title, value) {
+  return new Promise((resolve) => {
+    const modal = $("modal");
+    const input = $("modalInput");
+    $("modalTitle").textContent = title;
+    if (value === null) { input.classList.add("hidden"); }
+    else { input.classList.remove("hidden"); input.value = value; }
+    modal.classList.remove("hidden");
+    setTimeout(() => { if (value !== null) { input.focus(); input.select(); } }, 0);
+    const done = (val) => {
+      modal.classList.add("hidden");
+      $("modalOk").onclick = null;
+      $("modalCancel").onclick = null;
+      modal.onclick = null;
+      input.onkeydown = null;
+      resolve(val);
+    };
+    $("modalOk").onclick = () => done(value === null ? true : input.value.trim());
+    $("modalCancel").onclick = () => done(value === null ? false : null);
+    modal.onclick = (e) => { if (e.target === modal) done(value === null ? false : null); };
+    input.onkeydown = (e) => {
+      if (e.key === "Enter") { e.preventDefault(); done(value === null ? true : input.value.trim()); }
+      else if (e.key === "Escape") done(value === null ? false : null);
+    };
+  });
+}
+const askInput = (title, def = "") => askModal(title, def);
+const askConfirm = (title) => askModal(title, null);
+
+function showMenu(x, y, items) {
+  const m = $("ctxMenu");
+  m.innerHTML = "";
+  for (const it of items) {
+    const b = document.createElement("div");
+    b.className = "ctx-item" + (it.danger ? " danger" : "");
+    b.textContent = it.label;
+    b.onclick = (e) => { e.stopPropagation(); hideMenu(); it.onClick(); };
+    m.appendChild(b);
+  }
+  m.style.left = x + "px";
+  m.style.top = y + "px";
+  m.classList.remove("hidden");
+}
+function hideMenu() { $("ctxMenu").classList.add("hidden"); }
+
+// ---------- code editor ----------
+const MODE_DEPS = {
+  htmlmixed: ["xml", "javascript", "css"],
+  php: ["xml", "javascript", "css", "htmlmixed"],
+  vue: ["xml", "javascript", "css", "htmlmixed"],
+  markdown: ["xml"],
+  gfm: ["xml", "markdown"],
+  haml: ["ruby"],
+  smartymixed: ["xml"],
+  twig: ["xml"],
+  jinja2: ["xml"],
+  django: ["xml"],
+  xquery: ["xml"]
+};
+function modeInfoFor(name) {
+  if (!window.CodeMirror || !CodeMirror.findModeByFileName) return null;
+  const base = String(name).replace(/^.*[\\/]/, "");
+  const byFile = CodeMirror.findModeByFileName(base);
+  if (byFile) return byFile;
+  const dot = base.lastIndexOf(".");
+  if (dot > -1) return CodeMirror.findModeByExtension(base.slice(dot + 1)) || null;
+  return null;
+}
+function loadModeFolder(folder) {
+  if (loadedModes.has(folder)) return Promise.resolve();
+  return new Promise((resolve) => {
+    const s = document.createElement("script");
+    s.src = "../node_modules/codemirror/mode/" + folder + "/" + folder + ".js";
+    s.onload = () => { loadedModes.add(folder); resolve(); };
+    s.onerror = () => { loadedModes.add(folder); resolve(); };
+    document.body.appendChild(s);
+  });
+}
+async function ensureMode(info) {
+  if (!info) return null;
+  const folder = info.mode;
+  const deps = MODE_DEPS[folder];
+  if (deps) for (const d of deps) await loadModeFolder(d);
+  await loadModeFolder(folder);
+  return info.mime || (info.mimes && info.mimes[0]) || null;
+}
+
+function initEditor() {
+  if (editor.cm) return;
+  editor.cm = CodeMirror.fromTextArea($("edArea"), {
+    lineNumbers: true,
+    indentUnit: 2,
+    tabSize: 2,
+    indentWithTabs: false,
+    lineWrapping: false,
+    autoCloseBrackets: true,
+    matchBrackets: true,
+    styleActiveLine: true,
+    foldGutter: true,
+    gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+    extraKeys: {
+      "Ctrl-S": () => saveEditorFile(),
+      "Cmd-S": () => saveEditorFile(),
+      "Ctrl-/": "toggleComment",
+      "Cmd-/": "toggleComment",
+      "Ctrl-F": "find",
+      "Cmd-F": "find",
+      "Ctrl-H": "replace",
+      "Tab": (cm) => { if (cm.somethingSelected()) cm.indentSelection("add"); else cm.replaceSelection("  "); }
+    }
+  });
+  editor.cm.on("change", () => { if (!editor.loading) { editor.dirty = true; updateEditorStatus(); } });
+  editor.cm.on("cursorActivity", updateCursor);
+}
+function updateEditorStatus() {
+  const rel = editor.currentPath && editor.root ? editor.currentPath.replace(editor.root, "").replace(/^[\\/]/, "") : "";
+  $("edStatus").textContent = (editor.dirty ? "â— unsaved Â· " : "") + (rel || "ready");
+}
+function updateCursor() {
+  if (!editor.cm) { $("edCursor").textContent = ""; return; }
+  const c = editor.cm.getCursor();
+  $("edCursor").textContent = "Ln " + (c.line + 1) + ", Col " + (c.ch + 1);
+}
+function renderTreeNodes(nodes, container, depth) {
+  for (const n of nodes) {
+    const row = document.createElement("div");
+    row.className = "tree-row" + (n.dir ? " dir" : "") + (n.path === editor.currentPath ? " active" : "");
+    row.style.paddingLeft = (8 + depth * 13) + "px";
+    if (n.dir) {
+      const open = editor.expanded.has(n.path);
+      row.innerHTML = `<span class="ic">${open ? "â–¾" : "â–¸"}</span><span class="nm">${esc(n.name)}</span>`;
+      row.onclick = () => {
+        if (editor.expanded.has(n.path)) editor.expanded.delete(n.path);
+        else editor.expanded.add(n.path);
+        renderTreeView();
+      };
+      row.oncontextmenu = (e) => { e.preventDefault(); dirMenu(e, n.path); };
+      container.appendChild(row);
+      if (open) renderTreeNodes(n.children || [], container, depth + 1);
+    } else {
+      row.innerHTML = `<span class="ic">Â·</span><span class="nm">${esc(n.name)}</span><span class="sz">${fmtSize(n.size)}</span>`;
+      row.onclick = () => openEditorFile(n.path);
+      row.oncontextmenu = (e) => { e.preventDefault(); fileMenu(e, n.path, n.name); };
+      container.appendChild(row);
+    }
+  }
+}
+function renderTreeView() {
+  const wrap = $("edTree");
+  wrap.innerHTML = "";
+  if (!editor.tree || !editor.tree.length) {
+    wrap.innerHTML = `<div class="muted" style="padding:8px 12px">empty folder</div>`;
+    return;
+  }
+  renderTreeNodes(editor.tree, wrap, 0);
+}
+function dirMenu(e, dirPath) {
+  showMenu(e.clientX, e.clientY, [
+    { label: "New File", onClick: () => createIn(dirPath, false) },
+    { label: "New Folder", onClick: () => createIn(dirPath, true) },
+    { label: "Rename", onClick: () => renameEntry(dirPath) },
+    { label: "Delete", danger: true, onClick: () => deleteEntry(dirPath) },
+    { label: "Reveal in Explorer", onClick: () => window.api.editorReveal(dirPath) }
+  ]);
+}
+function fileMenu(e, filePath, name) {
+  showMenu(e.clientX, e.clientY, [
+    { label: "Open", onClick: () => openEditorFile(filePath) },
+    { label: "Rename", onClick: () => renameEntry(filePath) },
+    { label: "Delete", danger: true, onClick: () => deleteEntry(filePath) },
+    { label: "Reveal in Explorer", onClick: () => window.api.editorReveal(filePath) }
+  ]);
+}
+async function openFolder() {
+  try {
+    const res = await window.api.editorOpenFolder();
+    if (!res) return;
+    editor.root = res.root;
+    editor.expanded = new Set();
+    $("edRootName").textContent = res.name;
+    await refreshTree();
+  } catch (err) { toast("Open folder failed: " + (err?.message || err)); }
+}
+async function refreshTree() {
+  if (!editor.root) return;
+  try {
+    const res = await window.api.editorList();
+    if (!res) return;
+    editor.tree = res.tree;
+    $("edRootName").textContent = res.name;
+    renderTreeView();
+  } catch (err) { toast("Refresh failed: " + (err?.message || err)); }
+}
+async function openEditorFile(path) {
+  try {
+    const res = await window.api.editorRead(path);
+    if (res.binary) { toast("Binary file â€” not editable as text."); return; }
+    if (editor.dirty && editor.currentPath && editor.currentPath !== path) {
+      const keep = await askConfirm("Discard unsaved changes?");
+      if (!keep) return;
+    }
+    initEditor();
+    editor.loading = true;
+    editor.currentPath = path;
+    const mime = await ensureMode(modeInfoFor(res.name));
+    editor.cm.setOption("mode", mime || "null");
+    editor.cm.setValue(res.content);
+    editor.cm.clearHistory();
+    editor.cm.setCursor({ line: 0, ch: 0 });
+    editor.loading = false;
+    editor.dirty = false;
+    $("edWelcome").classList.add("hidden");
+    $("edWrap").classList.remove("hidden");
+    $("edFileLabel").textContent = res.name;
+    $("edFileLabel").title = path;
+    $("edSave").disabled = false;
+    $("edRename").disabled = false;
+    $("edDelete").disabled = false;
+    $("edReveal").disabled = false;
+    setTimeout(() => editor.cm.refresh(), 0);
+    updateEditorStatus();
+    updateCursor();
+    renderTreeView();
+  } catch (err) { toast("Open failed: " + (err?.message || err)); }
+}
+function closeEditorFile() {
+  editor.currentPath = null;
+  editor.dirty = false;
+  if (editor.cm) { editor.loading = true; editor.cm.setValue(""); editor.cm.clearHistory(); editor.loading = false; }
+  $("edWrap").classList.add("hidden");
+  $("edWelcome").classList.remove("hidden");
+  $("edFileLabel").textContent = "no file open";
+  $("edFileLabel").title = "";
+  $("edSave").disabled = true;
+  $("edRename").disabled = true;
+  $("edDelete").disabled = true;
+  $("edReveal").disabled = true;
+  updateEditorStatus();
+  updateCursor();
+  renderTreeView();
+}
+async function saveEditorFile() {
+  if (!editor.currentPath || !editor.cm) { toast("No file open."); return; }
+  try {
+    await window.api.editorWrite({ filePath: editor.currentPath, content: editor.cm.getValue() });
+    editor.dirty = false;
+    updateEditorStatus();
+    toast("Saved " + editor.currentPath.replace(/^.*[\\/]/, ""));
+  } catch (err) { toast("Save failed: " + (err?.message || err)); }
+}
+function currentDir() {
+  if (editor.currentPath) return editor.currentPath.replace(/[\\/][^\\/]*$/, "");
+  return editor.root;
+}
+async function createIn(dir, isDir) {
+  if (!editor.root) { toast("Open a folder first."); return; }
+  const name = await askInput(isDir ? "New folder name" : "New file name", "");
+  if (!name) return;
+  try {
+    const res = await window.api.editorCreate({ dir: dir || editor.root, name, isDir });
+    editor.expanded.add(dir || editor.root);
+    await refreshTree();
+    if (!isDir) await openEditorFile(res.path);
+    toast((isDir ? "Created folder " : "Created ") + name);
+  } catch (err) { toast("Create failed: " + (err?.message || err)); }
+}
+async function renameEntry(targetPath) {
+  const oldName = targetPath.replace(/^.*[\\/]/, "");
+  const name = await askInput("Rename", oldName);
+  if (!name || name === oldName) return;
+  try {
+    const res = await window.api.editorRename({ targetPath, newName: name });
+    if (editor.currentPath === targetPath) {
+      editor.currentPath = res.path;
+      $("edFileLabel").textContent = name;
+      $("edFileLabel").title = res.path;
+    }
+    await refreshTree();
+    updateEditorStatus();
+  } catch (err) { toast("Rename failed: " + (err?.message || err)); }
+}
+async function deleteEntry(targetPath) {
+  const name = targetPath.replace(/^.*[\\/]/, "");
+  const ok = await askConfirm('Delete "' + name + '"? It goes to the Recycle Bin.');
+  if (!ok) return;
+  try {
+    await window.api.editorDelete(targetPath);
+    if (editor.currentPath === targetPath || (editor.currentPath || "").startsWith(targetPath + "\\") || (editor.currentPath || "").startsWith(targetPath + "/")) closeEditorFile();
+    await refreshTree();
+    toast("Deleted " + name);
+  } catch (err) { toast("Delete failed: " + (err?.message || err)); }
+}
+
 // ---------- boot ----------
 window.addEventListener("DOMContentLoaded", async () => {
   $("btnMin").onclick = () => window.api.minimize();
@@ -507,9 +900,53 @@ window.addEventListener("DOMContentLoaded", async () => {
   $("btnClose").onclick = () => window.api.close();
 
   $("navChat").onclick = () => showView("Chat");
+  $("navEditor").onclick = () => showView("Editor");
   $("navModels").onclick = () => showView("Models");
   $("navDiscover").onclick = () => showView("Discover");
   $("navSettings").onclick = () => showView("Settings");
+
+  // editor
+  $("edOpenFolder").onclick = openFolder;
+  $("edOpenFolder2").onclick = openFolder;
+  $("edRefresh").onclick = refreshTree;
+  $("edSave").onclick = saveEditorFile;
+  $("edNewFile").onclick = () => createIn(currentDir(), false);
+  $("edNewFolder").onclick = () => createIn(currentDir(), true);
+  $("edReveal").onclick = () => { if (editor.currentPath) window.api.editorReveal(editor.currentPath); };
+  $("edRename").onclick = () => { if (editor.currentPath) renameEntry(editor.currentPath); };
+  $("edDelete").onclick = () => { if (editor.currentPath) deleteEntry(editor.currentPath); };
+  document.addEventListener("click", hideMenu);
+
+  // attachments
+  $("btnAttach").onclick = pickAttachments;
+  let dragDepth = 0;
+  document.addEventListener("dragenter", (e) => {
+    e.preventDefault();
+    dragDepth++;
+    if ($("viewChat").classList.contains("hidden")) return;
+    if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")) {
+      $("dropHint").classList.remove("hidden");
+      $("composerWrap").classList.add("dropping");
+    }
+  });
+  document.addEventListener("dragover", (e) => e.preventDefault());
+  document.addEventListener("dragleave", () => {
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) { $("dropHint").classList.add("hidden"); $("composerWrap").classList.remove("dropping"); }
+  });
+  document.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    $("dropHint").classList.add("hidden");
+    $("composerWrap").classList.remove("dropping");
+    if ($("viewChat").classList.contains("hidden")) return;
+    const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+    if (!files.length) return;
+    const paths = files.map((f) => { try { return window.api.filePath(f); } catch { return ""; } }).filter(Boolean);
+    if (!paths.length) { toast("Could not read dropped file path."); return; }
+    try { addAttachments(await window.api.attachDescribe(paths)); }
+    catch (err) { toast("Attach failed: " + (err?.message || err)); }
+  });
 
   $("btnNewChat").onclick = async () => { await createChat(); renderAll(); };
   $("modelSelect").onchange = async (e) => {
@@ -613,7 +1050,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 async function doHfSearch() {
   const q = $("hfQuery").value.trim();
   if (!q) return;
-  $("hfResults").innerHTML = `<div class="muted">Searching…</div>`;
+  $("hfResults").innerHTML = `<div class="muted">Searchingâ€¦</div>`;
   $("hfFilesWrap").classList.add("hidden");
   try {
     state.hfResults = await window.api.hfSearch(q);
@@ -630,3 +1067,5 @@ async function doExport(format) {
   const p = await window.api.exportChat({ chat, format });
   if (p) toast("Exported to " + p);
 }
+
+

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Privacy Policy — HackerGPT</title>
-<meta name="description" content="HackerGPT runs locally. This policy explains exactly what is stored on your device and the only two network destinations the app contacts." />
+<title>Privacy Policy — Local Chat</title>
+<meta name="description" content="Local Chat runs locally. This policy explains exactly what is stored on your device and the only two network destinations the app contacts." />
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" href="styles.css" />
 </head>
@@ -12,12 +12,12 @@
 
 <nav class="nav">
   <div class="nav-inner">
-    <a class="brand" href="index.html"><img src="assets/icon.png" alt="HackerGPT" /><span>HackerGPT</span></a>
+    <a class="brand" href="index.html"><img src="assets/icon.png" alt="Local Chat" /><span>Local Chat</span></a>
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="docs.html">Docs</a>
       <a href="downloads.html">Downloads</a>
-      <a class="gh" href="https://github.com/itriedcoding/HackerGPT" target="_blank" rel="noopener">GitHub ↗</a>
+      <a class="gh" href="https://github.com/itriedcoding/local-chat" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
   </div>
 </nav>
@@ -27,12 +27,12 @@
     <h1 style="font-size:clamp(32px,5vw,48px);letter-spacing:-0.03em">Privacy Policy</h1>
     <div class="updated">Last updated: 13 October 2026</div>
 
-    <p>HackerGPT is designed so that your data stays on your device. This policy explains what the application stores, where it is stored, and the limited circumstances in which it makes a network request. It also describes this website.</p>
+    <p>Local Chat is designed so that your data stays on your device. This policy explains what the application stores, where it is stored, and the limited circumstances in which it makes a network request. It also describes this website.</p>
 
-    <div class="callout"><b>In short:</b> HackerGPT has no account system, no analytics, and no tracking. Your conversations never leave your computer. The app only reaches the network when you explicitly browse or download models from Hugging Face, or talk to an Ollama server you run.</div>
+    <div class="callout"><b>In short:</b> Local Chat has no account system, no analytics, and no tracking. Your conversations never leave your computer. The app only reaches the network when you explicitly browse or download models from Hugging Face, or talk to an Ollama server you run.</div>
 
     <h2>1. Data stored on your device</h2>
-    <p>HackerGPT writes the following files into your Windows user data folder, under <code>%APPDATA%\hackergpt\</code>:</p>
+    <p>Local Chat writes the following files into your Windows user data folder, under <code>%APPDATA%\Local Chat\</code>:</p>
     <ul>
       <li><b style="color:var(--fg)">settings.json</b> — your generation and runtime settings (system prompt, temperature, context size, Ollama URL, and similar).</li>
       <li><b style="color:var(--fg)">models.json</b> — the list of models you have added, including file paths.</li>
@@ -42,18 +42,18 @@
     <p>These files are for the app's operation only. They are not transmitted to us or to anyone else. You can remove all of it at any time by deleting that folder; the Settings tab also offers a "delete all chats" action.</p>
 
     <h2>2. Network connections the app makes</h2>
-    <p>HackerGPT does not phone home. It initiates network connections only in these situations:</p>
+    <p>Local Chat does not phone home. It initiates network connections only in these situations:</p>
     <ul>
       <li><b style="color:var(--fg)">Hugging Face (huggingface.co).</b> When you use the Discover tab, the app queries the public Hugging Face API to search for GGUF models and list their files, and downloads the specific file you choose. These requests go to Hugging Face and are subject to Hugging Face's privacy policy. The app sends only the search terms and model identifiers needed for the request — not your conversations.</li>
       <li><b style="color:var(--fg)">Your Ollama server.</b> If you use Ollama features, the app sends your prompts to the Ollama server URL configured in Settings (by default <code>http://127.0.0.1:11434</code> on your own machine). If you point it at a remote host, that host receives your prompts. This is your configuration and your responsibility.</li>
     </ul>
-    <p>Apart from these, the app does not contact any server. In particular, HackerGPT itself contains no advertising, analytics, crash-reporting, or telemetry code.</p>
+    <p>Apart from these, the app does not contact any server. In particular, Local Chat itself contains no advertising, analytics, crash-reporting, or telemetry code.</p>
 
     <h2>3. Model outputs</h2>
-    <p>All inference is performed locally by llama.cpp or by the Ollama server you configured. Your prompts and the generated responses are processed on your hardware and are not sent anywhere by HackerGPT.</p>
+    <p>All inference is performed locally by llama.cpp or by the Ollama server you configured. Your prompts and the generated responses are processed on your hardware and are not sent anywhere by Local Chat.</p>
 
     <h2>4. Children's privacy</h2>
-    <p>HackerGPT is a general-purpose developer and hobbyist tool. It is not directed at children and we do not knowingly collect information from anyone, including children, because we do not collect personal information at all.</p>
+    <p>Local Chat is a general-purpose developer and hobbyist tool. It is not directed at children and we do not knowingly collect information from anyone, including children, because we do not collect personal information at all.</p>
 
     <h2>5. This website</h2>
     <p>This website is a set of static pages. It does not use cookies, and it does not include third-party advertising or tracking scripts. It is served by a hosting provider (Vercel), which may keep standard server logs — such as IP address and request time — for security and operational purposes, as is typical for any web host.</p>
@@ -62,13 +62,13 @@
     <p>Where the app or these pages link to third-party services — Hugging Face, Ollama, GitHub — those services have their own privacy policies that we do not control. Please review them.</p>
 
     <h2>7. Data deletion</h2>
-    <p>Because we do not hold your data, there is nothing for us to delete on our side. To erase everything locally, close the app and delete <code>%APPDATA%\hackergpt\</code>.</p>
+    <p>Because we do not hold your data, there is nothing for us to delete on our side. To erase everything locally, close the app and delete <code>%APPDATA%\Local Chat\</code>.</p>
 
     <h2>8. Changes to this policy</h2>
     <p>If this policy changes, the date at the top will be updated. Continued use of the Software after changes take effect constitutes acceptance of the revised policy.</p>
 
     <h2>9. Contact</h2>
-    <p>Privacy questions can be raised via the project's issue tracker at <a href="https://github.com/itriedcoding/HackerGPT/issues" target="_blank" rel="noopener">github.com/itriedcoding/HackerGPT</a>.</p>
+    <p>Privacy questions can be raised via the project's issue tracker at <a href="https://github.com/itriedcoding/local-chat/issues" target="_blank" rel="noopener">github.com/itriedcoding/Local Chat</a>.</p>
 
     <p class="kicker" style="margin-top:40px">This document is provided for informational purposes and does not constitute legal advice.</p>
   </article>
@@ -78,7 +78,7 @@
   <div class="wrap">
     <div class="footer-inner">
       <div>
-        <a class="brand" href="index.html"><img src="assets/icon.png" alt="HackerGPT" /><span>HackerGPT</span></a>
+        <a class="brand" href="index.html"><img src="assets/icon.png" alt="Local Chat" /><span>Local Chat</span></a>
         <p>A lightweight desktop client for running GGUF models locally. Open, private, and yours.</p>
       </div>
       <div>
@@ -100,8 +100,8 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <span>© 2026 HackerGPT. Provided as-is under the terms of service.</span>
-      <span>HackerGPT is not affiliated with Hugging Face, Ollama, or the llama.cpp project.</span>
+      <span>© 2026 Local Chat. Provided as-is under the terms of service.</span>
+      <span>Local Chat is not affiliated with Hugging Face, Ollama, or the llama.cpp project.</span>
     </div>
   </div>
 </footer>
