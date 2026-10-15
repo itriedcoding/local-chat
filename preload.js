@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld("api", {
   revealModel: (p) => ipcRenderer.invoke("models:reveal", p),
 
   listOllama: () => ipcRenderer.invoke("ollama:list"),
+  listLmStudio: () => ipcRenderer.invoke("lmstudio:list"),
 
   hfSearch: (q) => ipcRenderer.invoke("hf:search", q),
   hfFiles: (id) => ipcRenderer.invoke("hf:files", id),
@@ -33,6 +34,7 @@ contextBridge.exposeInMainWorld("api", {
   editorOpenFolder: () => ipcRenderer.invoke("editor:open-folder"),
   editorList: () => ipcRenderer.invoke("editor:list"),
   editorRead: (p) => ipcRenderer.invoke("editor:read", p),
+  editorExtract: (payload) => ipcRenderer.invoke("editor:extract", payload),
   editorWrite: (payload) => ipcRenderer.invoke("editor:write", payload),
   editorCreate: (payload) => ipcRenderer.invoke("editor:create", payload),
   editorRename: (payload) => ipcRenderer.invoke("editor:rename", payload),

@@ -75,6 +75,7 @@
           <button id="edNewFile" class="btn small">+ FILE</button>
           <button id="edNewFolder" class="btn small">+ FOLDER</button>
           <button id="edSave" class="btn small primary" disabled>SAVE</button>
+          <button id="edExtract" class="btn small primary" title="Extract this archive into the folder" disabled>EXTRACT</button>
           <button id="edRefresh" class="btn small" title="Refresh tree">↻</button>
         </div>
         <div class="et-right">
@@ -98,6 +99,13 @@
           <div id="edWrap" class="ed-wrap hidden">
             <textarea id="edArea"></textarea>
           </div>
+          <div id="edArchive" class="ed-archive hidden">
+            <div class="ed-archive-head">
+              <span id="edArchiveLabel" class="ed-archive-name">archive</span>
+              <span id="edArchiveMeta" class="muted"></span>
+            </div>
+            <div id="edArchiveList" class="ed-archive-list"></div>
+          </div>
         </div>
       </div>
       <div class="editor-status">
@@ -110,10 +118,11 @@
     <section id="viewModels" class="view hidden">
       <div class="page">
         <h1>MODELS</h1>
-        <p class="muted">Add your own <code>.gguf</code> files, or connect to a local <b>Ollama</b> server.</p>
+        <p class="muted">Add your own <code>.gguf</code> files, or connect to a local <b>Ollama</b> or <b>LM Studio</b> server.</p>
         <div class="row">
           <button id="btnAddModel" class="btn primary">+ ADD GGUF FILE</button>
           <button id="btnRefreshOllama" class="btn">↻ REFRESH OLLAMA</button>
+          <button id="btnRefreshLmStudio" class="btn">↻ REFRESH LM STUDIO</button>
           <button id="btnOpenDiscover" class="btn">↓ BROWSE HUGGING FACE</button>
         </div>
 
@@ -123,6 +132,10 @@
         <h2 class="sec-h">OLLAMA</h2>
         <div id="ollamaHint" class="muted"></div>
         <div id="ollamaList" class="model-list"></div>
+
+        <h2 class="sec-h">LM STUDIO</h2>
+        <div id="lmstudioHint" class="muted"></div>
+        <div id="lmstudioList" class="model-list"></div>
       </div>
     </section>
 
@@ -175,6 +188,9 @@
         </div>
         <label class="field"><span>Ollama server URL</span>
           <input id="sOllama" type="text" placeholder="http://127.0.0.1:11434" />
+        </label>
+        <label class="field"><span>LM Studio server URL</span>
+          <input id="sLmStudio" type="text" placeholder="http://127.0.0.1:1234" />
         </label>
         <div class="row">
           <button id="btnSaveSettings" class="btn primary">SAVE SETTINGS</button>

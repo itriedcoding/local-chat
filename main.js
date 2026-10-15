@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS = {
   threads: 0,
   gpuLayers: 0,
   ollamaUrl: "http://127.0.0.1:11434",
+  lmstudioUrl: "http://127.0.0.1:1234",
   activeModelId: null
 };
 
@@ -131,6 +132,21 @@ async function ollamaTags(settings) {
   if (!res.ok) throw new Error("Ollama responded " + res.status);
   const data = await res.json();
   return Array.isArray(data.models) ? data.models : [];
+}
+
+// ---------- lm studio (openai-compatible server) ----------
+function normalizeLmStudioBase(settings) {
+  let u = String(settings.lmstudioUrl || "http://127.0.0.1:1234").trim();
+  if (!/^https?:\/\//i.test(u)) u = "http://" + u;
+  u = u.replace(/\/+$/, "");
+  // allow users to paste either the host root or a .../v1 URL
+  return /\/v1$/i.test(u) ? u : u + "/v1";
+}
+async function lmStudioModels(settings) {
+  const res = await fetch(normalizeLmStudioBase(settings) + "/models", { method: "GET" });
+  if (!res.ok) throw new Error("LM Studio responded " + res.status);
+  const data = await res.json();
+  return Array.isArray(data.data) ? data.data : [];
 }
 
 // ---------- window ----------
@@ -265,6 +281,26 @@ ipcMain.handle("ollama:list", async () => {
         ollamaName: t.name,
         size: t.size || 0,
         details: t.details || {}
+      }))
+    };
+  } catch (err) {
+    return { ok: false, error: String(err?.message || err), models: [] };
+  }
+});
+
+// ---------- IPC: lm studio ----------
+ipcMain.handle("lmstudio:list", async () => {
+  const settings = { ...DEFAULT_SETTINGS, ...readJson("settings.json", {}) };
+  try {
+    const models = await lmStudioModels(settings);
+    return {
+      ok: true,
+      models: models.map((m) => ({
+        id: "l_" + Buffer.from(String(m.id)).toString("hex"),
+        type: "lmstudio",
+        name: m.id,
+        lmstudioName: m.id,
+        size: m.size || 0
       }))
     };
   } catch (err) {
@@ -413,6 +449,8 @@ ipcMain.handle("chat:send", async (e, { requestId, chatId, model, message, histo
     let full = "";
     if (model.type === "ollama") {
       full = await runOllama({ model, message, history, settings, controller, wc, requestId, maxTokens });
+    } else if (model.type === "lmstudio") {
+      full = await runLmStudio({ model, message, history, settings, controller, wc, requestId, maxTokens });
     } else {
       if (!model.path || !fs.existsSync(model.path)) throw new Error("Model file not found. Re-add the .gguf.");
       const session = await getLocalSession(chatId, model.path, settings, history);
@@ -489,6 +527,55 @@ async function runOllama({ model, message, history, settings, controller, wc, re
   return full;
 }
 
+async function runLmStudio({ model, message, history, settings, controller, wc, requestId, maxTokens }) {
+  const messages = [];
+  if (settings.systemPrompt) messages.push({ role: "system", content: settings.systemPrompt });
+  for (const m of history || []) {
+    if (m.role === "user" || m.role === "assistant") messages.push({ role: m.role, content: String(m.content || "") });
+  }
+  messages.push({ role: "user", content: String(message) });
+  const body = {
+    model: model.lmstudioName || model.name,
+    messages,
+    stream: true,
+    temperature: Number(settings.temperature),
+    top_p: Number(settings.topP)
+  };
+  if (maxTokens) body.max_tokens = maxTokens;
+  const res = await fetch(normalizeLmStudioBase(settings) + "/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: controller.signal
+  });
+  if (!res.ok) throw new Error("LM Studio responded " + res.status + (res.status === 404 ? " (model not found — load a model in LM Studio)" : ""));
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let full = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop();
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t || !t.startsWith("data:")) continue;
+      const payload = t.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      let obj;
+      try { obj = JSON.parse(payload); } catch { continue; }
+      if (obj.error) throw new Error(obj.error.message || String(obj.error));
+      const choice = obj.choices && obj.choices[0];
+      const delta = choice && (choice.delta || choice.message);
+      const piece = delta && delta.content;
+      if (piece) { full += piece; wc.send("chat:token", { requestId, token: piece }); }
+    }
+  }
+  return full;
+}
+
 ipcMain.handle("chat:stop", (_e, requestId) => {
   const c = abortControllers.get(requestId);
   if (c) { try { c.abort(); } catch {} abortControllers.delete(requestId); return true; }
@@ -507,6 +594,18 @@ function insideRoot(p) {
   const r = path.resolve(editorRoot);
   const t = path.resolve(p);
   return t === r || t.startsWith(r + path.sep);
+}
+
+function getAdmZip() {
+  try { return require("adm-zip"); } catch (err) { throw new Error("Archive support is unavailable: " + (err?.message || err)); }
+}
+function readArchive(fp) {
+  const AdmZip = getAdmZip();
+  let zip;
+  try { zip = new AdmZip(fp); } catch { return null; }
+  let entries;
+  try { entries = zip.getEntries(); } catch { return null; }
+  return { zip, entries };
 }
 
 function buildTree(dir, depth, budget) {
@@ -549,10 +648,56 @@ ipcMain.handle("editor:read", (_e, filePath) => {
   const st = fs.statSync(filePath);
   if (!st.isFile()) throw new Error("Not a file.");
   const name = path.basename(filePath);
+  const ext = path.extname(filePath).toLowerCase().replace(".", "");
+  if (ZIP_CONTAINERS.has(ext) && st.size <= 200 * 1024 * 1024) {
+    const ar = readArchive(filePath);
+    if (ar) {
+      const entries = ar.entries;
+      return {
+        archive: true,
+        path: filePath,
+        name,
+        size: st.size,
+        entryCount: entries.length,
+        entries: entries.slice(0, 2000).map((e) => ({ name: e.entryName, size: e.header ? e.header.size : 0, dir: e.isDirectory })),
+        truncated: entries.length > 2000
+      };
+    }
+  }
   if (st.size > 8 * 1024 * 1024) return { binary: true, path: filePath, name, size: st.size, content: "" };
   const buf = fs.readFileSync(filePath);
   if (buf.includes(0)) return { binary: true, path: filePath, name, size: st.size, content: "" };
   return { binary: false, path: filePath, name, size: st.size, content: buf.toString("utf8") };
+});
+ipcMain.handle("editor:extract", (_e, { archivePath, destDir }) => {
+  if (!insideRoot(archivePath)) throw new Error("Archive is outside the open project folder.");
+  const st = fs.statSync(archivePath);
+  if (!st.isFile()) throw new Error("Not a file.");
+  const ar = readArchive(archivePath);
+  if (!ar) throw new Error("Not a readable archive.");
+  const baseDir = destDir && insideRoot(destDir) ? destDir : path.dirname(archivePath);
+  const folderName = path.basename(archivePath, path.extname(archivePath)) || "extracted";
+  let dest = path.join(baseDir, folderName);
+  let i = 1;
+  while (fs.existsSync(dest)) { dest = path.join(baseDir, folderName + " (" + i + ")"); i++; }
+  if (!insideRoot(dest)) throw new Error("Invalid destination.");
+  const destResolved = path.resolve(dest);
+  fs.mkdirSync(destResolved, { recursive: true });
+  let files = 0;
+  for (const e of ar.entries) {
+    const outPath = path.resolve(destResolved, e.entryName);
+    if (outPath !== destResolved && !outPath.startsWith(destResolved + path.sep)) {
+      throw new Error("Blocked unsafe archive entry: " + e.entryName);
+    }
+    if (e.isDirectory) {
+      fs.mkdirSync(outPath, { recursive: true });
+    } else {
+      fs.mkdirSync(path.dirname(outPath), { recursive: true });
+      fs.writeFileSync(outPath, e.getData());
+      files++;
+    }
+  }
+  return { path: destResolved, files };
 });
 ipcMain.handle("editor:write", (_e, { filePath, content }) => {
   if (!insideRoot(filePath)) throw new Error("File is outside the open project folder.");

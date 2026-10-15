@@ -1,6 +1,6 @@
 {
   "name": "local-chat",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Local, private desktop AI chat with a built-in code editor for any language",
   "author": "Local Chat",
   "main": "main.js",

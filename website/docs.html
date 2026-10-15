@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Documentation — Local Chat</title>
-<meta name="description" content="Install Local Chat, load GGUF models from disk or Hugging Face, connect Ollama, tune generation settings, and export conversations." />
+<meta name="description" content="Install Local Chat, load GGUF models from disk or Hugging Face, connect Ollama or LM Studio, tune generation settings, and export conversations." />
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" href="styles.css" />
 </head>
@@ -31,6 +31,7 @@
       <a href="#models">Getting models</a>
       <a href="#discover">Downloading from Hugging Face</a>
       <a href="#ollama">Using Ollama</a>
+      <a href="#lmstudio">Using LM Studio</a>
       <a href="#chat">Chatting</a>
       <a href="#editor">Code editor</a>
       <a href="#attach">Attaching files</a>
@@ -43,10 +44,11 @@
 
     <article class="doc-body">
       <h2 id="overview">Overview</h2>
-      <p>Local Chat is a desktop chat client that runs language models on your own computer. It supports two backends:</p>
+      <p>Local Chat is a desktop chat client that runs language models on your own computer. It supports three backends:</p>
       <ul>
         <li><b style="color:var(--fg)">llama.cpp</b> (bundled through node-llama-cpp) — load a <code>.gguf</code> file directly and chat with it offline.</li>
         <li><b style="color:var(--fg)">Ollama</b> (optional) — connect to a local Ollama server and use any model you have pulled.</li>
+        <li><b style="color:var(--fg)">LM Studio</b> (optional) — connect to LM Studio's local server and use any model loaded there.</li>
       </ul>
       <p>The interface has five tabs: <b style="color:var(--fg)">Chat</b>, <b style="color:var(--fg)">Editor</b>, <b style="color:var(--fg)">Models</b>, <b style="color:var(--fg)">Discover</b>, and <b style="color:var(--fg)">Settings</b>.</p>
 
@@ -54,7 +56,7 @@
       <p>Local Chat ships as a 64-bit Windows application. You can use the installer or the portable build — both are on the <a class="inline" href="downloads.html">downloads page</a>.</p>
       <h3>Installer</h3>
       <ol style="color:var(--muted);padding-left:20px">
-        <li>Download <code>Local-Chat-Setup-2.0.0.exe</code> and run it.</li>
+        <li>Download <code>Local-Chat-Setup-2.1.0.exe</code> and run it.</li>
         <li>The installer is per-user and does not require administrator rights. Choose a folder if you like, then finish.</li>
         <li>Launch Local Chat from the Start menu shortcut.</li>
       </ol>
@@ -63,7 +65,7 @@
       <div class="callout"><b>First launch:</b> no model is loaded yet. Local Chat will tell you to add one. Head to the next section.</div>
 
       <h2 id="models">Getting models</h2>
-      <p>There are three ways to get a model into Local Chat.</p>
+      <p>There are four ways to get a model into Local Chat.</p>
 
       <h3>1. Download from Hugging Face (in-app)</h3>
       <p>Open the <b style="color:var(--fg)">Discover</b> tab, search, and download. Files are saved to Local Chat's own models folder and registered automatically. See <a class="inline" href="#discover">Downloading from Hugging Face</a>.</p>
@@ -73,6 +75,9 @@
 
       <h3>3. Use an Ollama model</h3>
       <p>If you already have Ollama running, its models appear on the Models tab under <b style="color:var(--fg)">OLLAMA</b>. See <a class="inline" href="#ollama">Using Ollama</a>.</p>
+
+      <h3>4. Use an LM Studio model</h3>
+      <p>If LM Studio's local server is running, its loaded models appear on the Models tab under <b style="color:var(--fg)">LM STUDIO</b>. See <a class="inline" href="#lmstudio">Using LM Studio</a>.</p>
 
       <h3>Choosing a model</h3>
       <p>GGUF models are quantised to trade quality for size. As a rough guide:</p>
@@ -102,6 +107,15 @@
         <li>Ollama models are prefixed and tagged <span class="tag-pill" style="padding:2px 9px">ollama</span> in the model list.</li>
       </ul>
       <p>Generation settings (temperature, top-p, top-k, repeat penalty, max tokens, system prompt) are passed through to Ollama for the request. Context size, threads and GPU layers are managed by Ollama itself.</p>
+
+      <h2 id="lmstudio">Using LM Studio</h2>
+      <p>Local Chat can also drive an <a class="inline" href="https://lmstudio.ai" target="_blank" rel="noopener">LM Studio</a> server. Install LM Studio, load a model, then start its local server from the <b style="color:var(--fg)">Developer</b> tab.</p>
+      <ul>
+        <li>In Local Chat, open <b style="color:var(--fg)">Models</b> and click <b style="color:var(--fg)">↻ REFRESH LM STUDIO</b>. Your loaded models appear under the LM Studio section.</li>
+        <li>LM Studio serves an OpenAI-compatible API at <code>http://127.0.0.1:1234</code> by default. Change it under <b style="color:var(--fg)">Settings → LM Studio server URL</b> if you run it on another port or host.</li>
+        <li>LM Studio models are prefixed and tagged <span class="tag-pill" style="padding:2px 9px">lm studio</span> in the model list.</li>
+      </ul>
+      <p>Generation settings (temperature, top-p, max tokens, system prompt and so on) are passed through to LM Studio for the request. Context size, threads and GPU layers are managed by LM Studio itself.</p>
 
       <h2 id="chat">Chatting</h2>
       <ul>
@@ -137,6 +151,8 @@
         <li>Right-click a file or folder in the tree for <b style="color:var(--fg)">New</b>, <b style="color:var(--fg)">Rename</b>, <b style="color:var(--fg)">Delete</b> and <b style="color:var(--fg)">Reveal</b>.</li>
         <li>Common heavy folders such as <code>node_modules</code> and <code>.git</code> are hidden from the tree for speed.</li>
       </ul>
+      <h3>Viewing archives</h3>
+      <p>Click a <code>.zip</code> in the file tree to list its contents, with entry names and sizes, without unpacking it. Use <b style="color:var(--fg)">EXTRACT</b> in the toolbar, or right-click the archive and choose <b style="color:var(--fg)">Extract here</b>, to unpack it into a new folder beside the archive.</p>
       <div class="callout">All file operations are scoped to the folder you opened, so the editor only touches files inside your project.</div>
 
       <h2 id="attach">Attaching files</h2>
@@ -162,6 +178,7 @@
         <li><b style="color:var(--fg)">Threads</b> — CPU threads for local inference. <code>0</code> means automatic.</li>
         <li><b style="color:var(--fg)">GPU layers</b> — how many layers to offload to the GPU. <code>0</code> keeps everything on the CPU.</li>
         <li><b style="color:var(--fg)">Ollama server URL</b> — where to find your Ollama server.</li>
+        <li><b style="color:var(--fg)">LM Studio server URL</b> — where to find your LM Studio server.</li>
       </ul>
       <div class="callout">Changing <b>context size</b>, <b>threads</b> or <b>GPU layers</b> reloads the local model, because those are set when a model is loaded into memory.</div>
       <p><b style="color:var(--fg)">RESET</b> restores the defaults above. The <b style="color:var(--fg)">DANGER ZONE</b> section can delete every stored conversation.</p>
@@ -202,6 +219,8 @@ npm run dist</pre>
       <p>Local speed depends on your hardware and model size. Try a smaller model or a lower quantisation, raise the thread count, or offload layers to the GPU if you have one. Close other memory-heavy apps.</p>
       <h3>"Could not reach Ollama"</h3>
       <p>Make sure Ollama is running and that the URL in Settings matches. Confirm with <code>ollama list</code> in a terminal.</p>
+      <h3>"Could not reach LM Studio"</h3>
+      <p>Start the local server in LM Studio (Developer tab) and make sure the URL in Settings matches, usually <code>http://127.0.0.1:1234</code>.</p>
       <h3>A download fails or stalls</h3>
       <p>Cancel it and retry — large files over a slow connection can time out. Check that you have free disk space.</p>
       <h3>Where do downloaded models go?</h3>
@@ -235,6 +254,7 @@ npm run dist</pre>
         <h5>Built with</h5>
         <a href="https://huggingface.co" target="_blank" rel="noopener">Hugging Face</a>
         <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>
+        <a href="https://lmstudio.ai" target="_blank" rel="noopener">LM Studio</a>
         <a href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">llama.cpp</a>
       </div>
     </div>

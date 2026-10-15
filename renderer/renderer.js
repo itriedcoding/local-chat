@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id);
 const state = {
   models: [],
   ollama: { ok: false, error: "", models: [] },
+  lmstudio: { ok: false, error: "", models: [] },
   chats: [],
   settings: null,
   activeChatId: null,
@@ -24,6 +25,7 @@ const editor = {
   currentPath: null,
   dirty: false,
   loading: false,
+  isArchive: false,
   expanded: new Set()
 };
 const loadedModes = new Set();
@@ -51,13 +53,16 @@ function renderMd(src) {
   h = h.replace(/^#{1,3} (.*)$/gm, "<p><b>$1</b></p>");
   h = h.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
   h = h.replace(/`([^`\n]+)`/g, "<code>$1</code>");
-  h = h.replace(/^- (.*)$/gm, "â€¢ $1");
+  h = h.replace(/^- (.*)$/gm, "• $1");
   h = h.replace(/\n/g, "<br>");
   return h;
 }
 
 function allModels() {
-  return [...state.models, ...state.ollama.models];
+  return [...state.models, ...state.ollama.models, ...state.lmstudio.models];
+}
+function modelBackend(m) {
+  return m.type === "ollama" ? "Ollama" : m.type === "lmstudio" ? "LM Studio" : "llama.cpp";
 }
 function activeModel() {
   const list = allModels();
@@ -84,13 +89,14 @@ function renderModelSelect() {
   const list = allModels();
   if (!list.length) {
     const o = document.createElement("option");
-    o.textContent = "No models â€” add one";
+    o.textContent = "No models — add one";
     o.value = "";
     sel.appendChild(o);
     return;
   }
   const local = state.models;
   const oll = state.ollama.models;
+  const lms = state.lmstudio.models;
   const mk = (arr, parent) => {
     for (const m of arr) {
       const o = document.createElement("option");
@@ -106,14 +112,17 @@ function renderModelSelect() {
   if (oll.length) {
     const g = document.createElement("optgroup"); g.label = "OLLAMA"; mk(oll, g); sel.appendChild(g);
   }
+  if (lms.length) {
+    const g = document.createElement("optgroup"); g.label = "LM STUDIO"; mk(lms, g); sel.appendChild(g);
+  }
 }
 function renderModelStatus() {
   const el = $("modelStatus");
   const m = activeModel();
   if (!m) { el.textContent = "no model loaded"; el.classList.remove("ok"); return; }
   el.classList.add("ok");
-  const tag = m.type === "ollama" ? "ollama" : "gguf";
-  el.textContent = "â— " + m.name + " Â· " + tag + (m.size ? " Â· " + fmtSize(m.size) : "");
+  const tag = m.type === "ollama" ? "ollama" : m.type === "lmstudio" ? "lm studio" : "gguf";
+  el.textContent = "● " + m.name + " · " + tag + (m.size ? " · " + fmtSize(m.size) : "");
 }
 
 // ---------- chats ----------
@@ -125,10 +134,10 @@ function renderChatList() {
     d.className = "chat-item" + (c.id === state.activeChatId ? " active" : "");
     d.innerHTML =
       `<div style="min-width:0"><div class="t">${esc(c.title || "Untitled")}</div>` +
-      `<div class="d">${esc((c.modelName || "") + " Â· " + (c.messages?.length || 0) + " msgs")}</div></div>`;
+      `<div class="d">${esc((c.modelName || "") + " · " + (c.messages?.length || 0) + " msgs")}</div></div>`;
     const x = document.createElement("button");
     x.className = "x";
-    x.textContent = "Ã—";
+    x.textContent = "×";
     x.title = "Delete";
     x.onclick = async (e) => {
       e.stopPropagation();
@@ -158,9 +167,9 @@ function renderMessages(streamingText) {
       `<div class="empty"><h2>LOCAL CHAT</h2>` +
       (all.length
         ? (m
-          ? `<p>Chatting with <code>${esc(m.name)}</code> (${m.type === "ollama" ? "Ollama" : "llama.cpp"}). Everything runs on-device.</p><p>Type below to begin.</p>`
+          ? `<p>Chatting with <code>${esc(m.name)}</code> (${modelBackend(m)}). Everything runs on-device.</p><p>Type below to begin.</p>`
           : `<p>Select a model to begin.</p>`)
-        : `<p>No models available.</p><p>Go to <code>MODELS</code> to add a <code>.gguf</code>, or connect Ollama.</p>`) +
+        : `<p>No models available.</p><p>Go to <code>MODELS</code> to add a <code>.gguf</code>, or connect Ollama or LM Studio.</p>`) +
       `</div>`;
     return;
   }
@@ -168,7 +177,7 @@ function renderMessages(streamingText) {
   if (streamingText !== undefined) {
     const div = document.createElement("div");
     div.className = "msg assistant streaming";
-    div.innerHTML = `<div class="who">MODEL</div><div class="bubble">${renderMd(streamingText) || "â–Œ"}</div>`;
+    div.innerHTML = `<div class="who">MODEL</div><div class="bubble">${renderMd(streamingText) || "▌"}</div>`;
     box.appendChild(div);
   }
   box.scrollTop = box.scrollHeight;
@@ -181,7 +190,7 @@ function messageEl(msg, idx, chat) {
   if (Array.isArray(msg.attachments) && msg.attachments.length) {
     const mini = document.createElement("div");
     mini.className = "attach-mini";
-    mini.innerHTML = msg.attachments.map((a) => `<span>${esc(a.name)}${a.size ? " Â· " + fmtSize(a.size) : ""}</span>`).join("");
+    mini.innerHTML = msg.attachments.map((a) => `<span>${esc(a.name)}${a.size ? " · " + fmtSize(a.size) : ""}</span>`).join("");
     div.appendChild(mini);
   }
   const actions = document.createElement("div");
@@ -209,6 +218,7 @@ function renderAll(streamingText) {
   renderChatList();
   renderModelList();
   renderOllamaList();
+  renderLmStudioList();
   renderMessages(streamingText);
   renderDownloads();
   renderAttachments();
@@ -246,7 +256,7 @@ function renderModelList() {
     card.innerHTML =
       `<div style="min-width:0"><div class="name">${esc(m.name)}</div>` +
       `<div class="path">${esc(m.path)}</div>` +
-      `<div class="meta">${fmtSize(m.size)} Â· gguf${m.source ? " Â· from " + esc(m.source) : ""}</div></div>`;
+      `<div class="meta">${fmtSize(m.size)} · gguf${m.source ? " · from " + esc(m.source) : ""}</div></div>`;
     const acts = document.createElement("div");
     acts.className = "actions";
     acts.appendChild(mkBtn(state.settings?.activeModelId === m.id ? "ACTIVE" : "USE", state.settings?.activeModelId === m.id, async () => {
@@ -296,7 +306,35 @@ function renderOllamaList() {
     card.className = "model-card" + (state.settings?.activeModelId === m.id ? " active" : "");
     card.innerHTML =
       `<div style="min-width:0"><div class="name">${esc(m.name)} <span class="tag ollama">OLLAMA</span></div>` +
-      `<div class="meta">${fmtSize(m.size)}${m.details?.parameter_size ? " Â· " + esc(m.details.parameter_size) : ""}${m.details?.quantization_level ? " Â· " + esc(m.details.quantization_level) : ""}</div></div>`;
+      `<div class="meta">${fmtSize(m.size)}${m.details?.parameter_size ? " · " + esc(m.details.parameter_size) : ""}${m.details?.quantization_level ? " · " + esc(m.details.quantization_level) : ""}</div></div>`;
+    card.appendChild(mkBtn(state.settings?.activeModelId === m.id ? "ACTIVE" : "USE", state.settings?.activeModelId === m.id, async () => {
+      state.settings = await window.api.setActiveModel(m.id); renderAll();
+    }));
+    wrap.appendChild(card);
+  }
+}
+
+function renderLmStudioList() {
+  const wrap = $("lmstudioList");
+  const hint = $("lmstudioHint");
+  wrap.innerHTML = "";
+  if (!state.lmstudio.ok) {
+    hint.innerHTML = `Could not reach LM Studio at <code>${esc(state.settings?.lmstudioUrl || "")}</code>. ` +
+      `Open LM Studio, go to the <b>Developer</b> tab, start the local server, then REFRESH.` +
+      (state.lmstudio.error ? ` <span class="muted">(${esc(state.lmstudio.error)})</span>` : "");
+    return;
+  }
+  if (!state.lmstudio.models.length) {
+    hint.innerHTML = `Connected to LM Studio, but no models are loaded. Load a model in LM Studio, then REFRESH.`;
+    return;
+  }
+  hint.innerHTML = `Connected. ${state.lmstudio.models.length} model(s) available.`;
+  for (const m of state.lmstudio.models) {
+    const card = document.createElement("div");
+    card.className = "model-card" + (state.settings?.activeModelId === m.id ? " active" : "");
+    card.innerHTML =
+      `<div style="min-width:0"><div class="name">${esc(m.name)} <span class="tag lmstudio">LM STUDIO</span></div>` +
+      `<div class="meta">${fmtSize(m.size)}</div></div>`;
     card.appendChild(mkBtn(state.settings?.activeModelId === m.id ? "ACTIVE" : "USE", state.settings?.activeModelId === m.id, async () => {
       state.settings = await window.api.setActiveModel(m.id); renderAll();
     }));
@@ -314,16 +352,16 @@ function renderHfResults() {
     card.className = "model-card" + (state.hfModelId === r.id ? " active" : "");
     card.innerHTML =
       `<div style="min-width:0"><div class="name">${esc(r.id)}</div>` +
-      `<div class="meta">â†“ ${Number(r.downloads).toLocaleString()} Â· â™¥ ${r.likes}</div></div>`;
+      `<div class="meta">↓ ${Number(r.downloads).toLocaleString()} · ♥ ${r.likes}</div></div>`;
     card.appendChild(mkBtn("VIEW FILES", state.hfModelId === r.id, () => loadHfFiles(r.id)));
     wrap.appendChild(card);
   }
 }
 async function loadHfFiles(id) {
   state.hfModelId = id;
-  $("hfFilesTitle").textContent = "FILES Â· " + id;
+  $("hfFilesTitle").textContent = "FILES · " + id;
   $("hfFilesWrap").classList.remove("hidden");
-  $("hfFiles").innerHTML = `<div class="muted">Loadingâ€¦</div>`;
+  $("hfFiles").innerHTML = `<div class="muted">Loading…</div>`;
   renderHfResults();
   try {
     state.hfFiles = await window.api.hfFiles(id);
@@ -372,7 +410,7 @@ function renderDownloads() {
     const pct = d.total ? Math.min(100, Math.round((d.received / d.total) * 100)) : 0;
     card.innerHTML =
       `<div style="min-width:0;flex:1"><div class="name">${esc(d.name)}</div>` +
-      `<div class="meta">${d.status === "downloading" ? `${fmtSize(d.received)}${d.total ? " / " + fmtSize(d.total) : ""} Â· ${pct}%` : d.status}</div>` +
+      `<div class="meta">${d.status === "downloading" ? `${fmtSize(d.received)}${d.total ? " / " + fmtSize(d.total) : ""} · ${pct}%` : d.status}</div>` +
       `<div class="dl-track"><div class="dl-fill" style="width:${pct}%"></div></div></div>`;
     if (d.status === "downloading") {
       card.appendChild(mkBtn("CANCEL", false, () => window.api.hfCancel(d.downloadId)));
@@ -429,7 +467,7 @@ async function generate(chat) {
   state.genStart = Date.now();
   state.genTokens = 0;
   $("genBar").classList.remove("hidden");
-  $("genLabel").textContent = "generating with " + m.name + "â€¦";
+  $("genLabel").textContent = "generating with " + m.name + "…";
   renderAll("");
   const last = chat.messages[chat.messages.length - 1];
   const history = chat.messages.slice(0, -1).map((x) => ({ role: x.role, content: x.context || x.content }));
@@ -458,7 +496,7 @@ function wireStreaming() {
     streamBuf += token;
     state.genTokens++;
     const secs = Math.max(0.001, (Date.now() - state.genStart) / 1000);
-    $("genLabel").textContent = `generatingâ€¦ ${state.genTokens} tok Â· ${(state.genTokens / secs).toFixed(1)} tok/s`;
+    $("genLabel").textContent = `generating… ${state.genTokens} tok · ${(state.genTokens / secs).toFixed(1)} tok/s`;
     renderMessages(streamBuf);
   });
   window.api.onDone(async ({ requestId, full }) => {
@@ -508,6 +546,20 @@ function fillSettings() {
   $("sThreads").value = s.threads;
   $("sGpu").value = s.gpuLayers;
   $("sOllama").value = s.ollamaUrl || "";
+  $("sLmStudio").value = s.lmstudioUrl || "";
+}
+
+async function refreshLmStudio(showToast) {
+  const res = await window.api.listLmStudio();
+  state.lmstudio = { ok: res.ok, error: res.error || "", models: res.models || [] };
+  if (state.lmstudio.ok && state.settings) {
+    const all = allModels();
+    if (!all.find((m) => m.id === state.settings.activeModelId) && all.length) {
+      state.settings = await window.api.setActiveModel(all[0].id);
+    }
+  }
+  renderAll();
+  if (showToast) toast(res.ok ? `LM Studio: ${res.models.length} model(s).` : "LM Studio unreachable.");
 }
 
 async function refreshOllama(showToast) {
@@ -548,7 +600,7 @@ function renderAttachments() {
       `<span class="k">${fmtSize(a.size)}</span>`;
     const x = document.createElement("button");
     x.className = "x";
-    x.textContent = "Ã—";
+    x.textContent = "×";
     x.title = "Remove";
     x.onclick = () => { state.attachments = state.attachments.filter((k) => k.id !== a.id); renderAttachments(); };
     chip.appendChild(x);
@@ -566,7 +618,7 @@ function addAttachments(items) {
     added++;
   }
   renderAttachments();
-  if (rejected) toast("Skipped " + rejected + " audio/video file(s) â€” not supported.");
+  if (rejected) toast("Skipped " + rejected + " audio/video file(s) — not supported.");
   else if (added) toast(added + " file(s) attached.");
 }
 async function pickAttachments() {
@@ -582,7 +634,7 @@ function buildAttachmentBlock(list) {
     let body;
     if (a.kind === "text") {
       let t = a.text || "";
-      if (t.length > budget) t = t.slice(0, Math.max(0, budget)) + "\nâ€¦[truncated]";
+      if (t.length > budget) t = t.slice(0, Math.max(0, budget)) + "\n…[truncated]";
       budget -= Math.min(t.length, Math.max(0, budget));
       body = t;
     } else if (a.kind === "archive") {
@@ -716,7 +768,7 @@ function initEditor() {
 }
 function updateEditorStatus() {
   const rel = editor.currentPath && editor.root ? editor.currentPath.replace(editor.root, "").replace(/^[\\/]/, "") : "";
-  $("edStatus").textContent = (editor.dirty ? "â— unsaved Â· " : "") + (rel || "ready");
+  $("edStatus").textContent = (editor.dirty ? "● unsaved · " : "") + (rel || "ready");
 }
 function updateCursor() {
   if (!editor.cm) { $("edCursor").textContent = ""; return; }
@@ -730,7 +782,7 @@ function renderTreeNodes(nodes, container, depth) {
     row.style.paddingLeft = (8 + depth * 13) + "px";
     if (n.dir) {
       const open = editor.expanded.has(n.path);
-      row.innerHTML = `<span class="ic">${open ? "â–¾" : "â–¸"}</span><span class="nm">${esc(n.name)}</span>`;
+      row.innerHTML = `<span class="ic">${open ? "▾" : "▸"}</span><span class="nm">${esc(n.name)}</span>`;
       row.onclick = () => {
         if (editor.expanded.has(n.path)) editor.expanded.delete(n.path);
         else editor.expanded.add(n.path);
@@ -740,7 +792,7 @@ function renderTreeNodes(nodes, container, depth) {
       container.appendChild(row);
       if (open) renderTreeNodes(n.children || [], container, depth + 1);
     } else {
-      row.innerHTML = `<span class="ic">Â·</span><span class="nm">${esc(n.name)}</span><span class="sz">${fmtSize(n.size)}</span>`;
+      row.innerHTML = `<span class="ic">·</span><span class="nm">${esc(n.name)}</span><span class="sz">${fmtSize(n.size)}</span>`;
       row.onclick = () => openEditorFile(n.path);
       row.oncontextmenu = (e) => { e.preventDefault(); fileMenu(e, n.path, n.name); };
       container.appendChild(row);
@@ -765,13 +817,24 @@ function dirMenu(e, dirPath) {
     { label: "Reveal in Explorer", onClick: () => window.api.editorReveal(dirPath) }
   ]);
 }
+const ARCHIVE_RE = /\.(zip|jar|apk|epub|docx|xlsx|pptx|odt|ods|odp|war|aar|whl)$/i;
+async function extractArchivePath(filePath) {
+  try {
+    const res = await window.api.editorExtract({ archivePath: filePath });
+    editor.expanded.add(res.path.replace(/[\\/][^\\/]*$/, ""));
+    await refreshTree();
+    toast("Extracted " + res.files + " file(s).");
+  } catch (err) { toast("Extract failed: " + (err?.message || err)); }
+}
 function fileMenu(e, filePath, name) {
-  showMenu(e.clientX, e.clientY, [
-    { label: "Open", onClick: () => openEditorFile(filePath) },
+  const items = [{ label: "Open", onClick: () => openEditorFile(filePath) }];
+  if (ARCHIVE_RE.test(name)) items.push({ label: "Extract here", onClick: () => extractArchivePath(filePath) });
+  items.push(
     { label: "Rename", onClick: () => renameEntry(filePath) },
     { label: "Delete", danger: true, onClick: () => deleteEntry(filePath) },
     { label: "Reveal in Explorer", onClick: () => window.api.editorReveal(filePath) }
-  ]);
+  );
+  showMenu(e.clientX, e.clientY, items);
 }
 async function openFolder() {
   try {
@@ -793,15 +856,61 @@ async function refreshTree() {
     renderTreeView();
   } catch (err) { toast("Refresh failed: " + (err?.message || err)); }
 }
+function showArchive(res) {
+  editor.isArchive = true;
+  editor.currentPath = res.path;
+  editor.dirty = false;
+  $("edWelcome").classList.add("hidden");
+  $("edWrap").classList.add("hidden");
+  $("edArchive").classList.remove("hidden");
+  $("edFileLabel").textContent = res.name;
+  $("edFileLabel").title = res.path;
+  $("edSave").disabled = true;
+  $("edExtract").disabled = false;
+  $("edRename").disabled = false;
+  $("edDelete").disabled = false;
+  $("edReveal").disabled = false;
+  $("edArchiveLabel").textContent = res.name;
+  $("edArchiveMeta").textContent =
+    `${res.entryCount} entr${res.entryCount === 1 ? "y" : "ies"} · ${fmtSize(res.size)}` +
+    (res.truncated ? " · showing first 2000" : "");
+  const list = $("edArchiveList");
+  list.innerHTML = "";
+  if (!res.entries.length) {
+    list.innerHTML = `<div class="muted" style="padding:12px">empty archive</div>`;
+  } else {
+    for (const e of res.entries) {
+      const row = document.createElement("div");
+      row.className = "arc-row" + (e.dir ? " dir" : "");
+      row.innerHTML = `<span class="nm" title="${esc(e.name)}">${esc(e.name)}${e.dir ? "/" : ""}</span>` +
+        `<span class="sz">${e.dir ? "" : fmtSize(e.size)}</span>`;
+      list.appendChild(row);
+    }
+  }
+  $("edStatus").textContent = "archive · " + res.name;
+  $("edCursor").textContent = "";
+  renderTreeView();
+}
+
 async function openEditorFile(path) {
   try {
     const res = await window.api.editorRead(path);
-    if (res.binary) { toast("Binary file â€” not editable as text."); return; }
+    if (res.archive) {
+      if (editor.dirty && editor.currentPath && editor.currentPath !== path) {
+        const keep = await askConfirm("Discard unsaved changes?");
+        if (!keep) return;
+      }
+      showArchive(res);
+      return;
+    }
+    if (res.binary) { toast("Binary file · not editable as text."); return; }
     if (editor.dirty && editor.currentPath && editor.currentPath !== path) {
       const keep = await askConfirm("Discard unsaved changes?");
       if (!keep) return;
     }
     initEditor();
+    editor.isArchive = false;
+    $("edArchive").classList.add("hidden");
     editor.loading = true;
     editor.currentPath = path;
     const mime = await ensureMode(modeInfoFor(res.name));
@@ -816,6 +925,7 @@ async function openEditorFile(path) {
     $("edFileLabel").textContent = res.name;
     $("edFileLabel").title = path;
     $("edSave").disabled = false;
+    $("edExtract").disabled = true;
     $("edRename").disabled = false;
     $("edDelete").disabled = false;
     $("edReveal").disabled = false;
@@ -828,12 +938,15 @@ async function openEditorFile(path) {
 function closeEditorFile() {
   editor.currentPath = null;
   editor.dirty = false;
+  editor.isArchive = false;
   if (editor.cm) { editor.loading = true; editor.cm.setValue(""); editor.cm.clearHistory(); editor.loading = false; }
   $("edWrap").classList.add("hidden");
+  $("edArchive").classList.add("hidden");
   $("edWelcome").classList.remove("hidden");
   $("edFileLabel").textContent = "no file open";
   $("edFileLabel").title = "";
   $("edSave").disabled = true;
+  $("edExtract").disabled = true;
   $("edRename").disabled = true;
   $("edDelete").disabled = true;
   $("edReveal").disabled = true;
@@ -841,7 +954,18 @@ function closeEditorFile() {
   updateCursor();
   renderTreeView();
 }
+
+async function extractArchive() {
+  if (!editor.isArchive || !editor.currentPath) { toast("Open an archive first."); return; }
+  try {
+    const res = await window.api.editorExtract({ archivePath: editor.currentPath });
+    editor.expanded.add(res.path.replace(/[\\/][^\\/]*$/, ""));
+    await refreshTree();
+    toast("Extracted " + res.files + " file(s).");
+  } catch (err) { toast("Extract failed: " + (err?.message || err)); }
+}
 async function saveEditorFile() {
+  if (editor.isArchive) { toast("Archive files can't be saved as text."); return; }
   if (!editor.currentPath || !editor.cm) { toast("No file open."); return; }
   try {
     await window.api.editorWrite({ filePath: editor.currentPath, content: editor.cm.getValue() });
@@ -910,6 +1034,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   $("edOpenFolder2").onclick = openFolder;
   $("edRefresh").onclick = refreshTree;
   $("edSave").onclick = saveEditorFile;
+  $("edExtract").onclick = extractArchive;
   $("edNewFile").onclick = () => createIn(currentDir(), false);
   $("edNewFolder").onclick = () => createIn(currentDir(), true);
   $("edReveal").onclick = () => { if (editor.currentPath) window.api.editorReveal(editor.currentPath); };
@@ -964,6 +1089,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     renderAll();
   };
   $("btnRefreshOllama").onclick = () => refreshOllama(true);
+  $("btnRefreshLmStudio").onclick = () => refreshLmStudio(true);
   $("btnOpenDiscover").onclick = () => showView("Discover");
 
   $("btnHfSearch").onclick = doHfSearch;
@@ -992,21 +1118,26 @@ window.addEventListener("DOMContentLoaded", async () => {
       contextSize: Number($("sCtx").value),
       threads: Number($("sThreads").value),
       gpuLayers: Number($("sGpu").value),
-      ollamaUrl: $("sOllama").value
+      ollamaUrl: $("sOllama").value,
+      lmstudioUrl: $("sLmStudio").value
     });
     $("settingsMsg").textContent = "Saved.";
     setTimeout(() => ($("settingsMsg").textContent = ""), 2000);
     renderAll();
+    refreshOllama(false);
+    refreshLmStudio(false);
   };
   $("btnResetSettings").onclick = async () => {
     state.settings = await window.api.saveSettings({
       systemPrompt: "You are a helpful assistant. Answer concisely.",
       temperature: 0.7, topP: 0.95, topK: 40, repeatPenalty: 1.1,
       maxTokens: 1024, contextSize: 4096, threads: 0, gpuLayers: 0,
-      ollamaUrl: "http://127.0.0.1:11434"
+      ollamaUrl: "http://127.0.0.1:11434", lmstudioUrl: "http://127.0.0.1:1234"
     });
     fillSettings();
     renderAll();
+    refreshOllama(false);
+    refreshLmStudio(false);
   };
   $("btnWipeChats").onclick = async () => {
     for (const c of [...state.chats]) await window.api.deleteChat(c.id);
@@ -1042,6 +1173,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     fillSettings();
     renderAll();
     refreshOllama(false);
+    refreshLmStudio(false);
   } catch (err) {
     toast("Boot failed: " + (err?.message || err));
   }
@@ -1050,7 +1182,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 async function doHfSearch() {
   const q = $("hfQuery").value.trim();
   if (!q) return;
-  $("hfResults").innerHTML = `<div class="muted">Searchingâ€¦</div>`;
+  $("hfResults").innerHTML = `<div class="muted">Searching…</div>`;
   $("hfFilesWrap").classList.add("hidden");
   try {
     state.hfResults = await window.api.hfSearch(q);

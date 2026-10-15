@@ -183,7 +183,7 @@ p { margin: 0 0 1em; color: var(--muted); }
 .icon-badge svg { width: 20px; height: 20px; stroke: var(--fg); fill: none; stroke-width: 1.6; }
 
 /* ---------- engines ---------- */
-.engines { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.engines { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .engine {
   border: 1px solid var(--line);
   border-radius: var(--radius);

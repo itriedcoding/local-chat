@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Local Chat — Local AI chat for GGUF models</title>
-<meta name="description" content="Local Chat is a lightweight desktop chat app that runs GGUF models entirely on your machine via llama.cpp, or connects to your local Ollama server. No accounts, no cloud, no telemetry." />
+<meta name="description" content="Local Chat is a lightweight desktop chat app that runs GGUF models entirely on your machine via llama.cpp, or connects to your local Ollama or LM Studio server. No accounts, no cloud, no telemetry." />
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" href="styles.css" />
 </head>
@@ -26,16 +26,16 @@
   <div class="wrap">
     <span class="eyebrow">Offline · Private · Local-first</span>
     <h1>Chat, code, and build —<br />all <span class="dim">on your machine.</span></h1>
-    <p class="lead">Local Chat is a desktop app for running GGUF language models locally through llama.cpp — or connecting to the Ollama server you already use. It ships with a built-in code editor for any language and lets you attach any file to a conversation. No account. No API keys. No telemetry.</p>
+    <p class="lead">Local Chat is a desktop app for running GGUF language models locally through llama.cpp — or connecting to the Ollama or LM Studio server you already run. It ships with a built-in code editor for any language and lets you attach any file to a conversation. No account. No API keys. No telemetry.</p>
     <div class="hero-actions">
       <a class="btn primary lg" href="downloads.html">Download for Windows <span class="arrow">→</span></a>
       <a class="btn lg" href="docs.html">Read the docs</a>
     </div>
     <div class="hero-meta">
-      <span><i class="dot"></i> v2.0.0</span>
+      <span><i class="dot"></i> v2.1.0</span>
       <span>Windows 10 / 11 · x64</span>
       <span>Runs 100% on-device</span>
-      <span>Inference by llama.cpp &amp; Ollama</span>
+      <span>Inference by llama.cpp, Ollama &amp; LM Studio</span>
     </div>
 
     <div class="term">
@@ -45,7 +45,7 @@
       </div>
       <div class="term-body">
         <div><span class="mut">·</span> runtime <span class="mut">................</span> <span class="fill">ok</span></div>
-        <div><span class="mut">·</span> backend <span class="mut">................</span> <span class="fill">llama.cpp</span></div>
+        <div><span class="mut">·</span> backend <span class="mut">................</span> <span class="fill">llama.cpp · ollama · lm studio</span></div>
         <div><span class="mut">·</span> chat session ready</div>
         <div>&nbsp;</div>
         <div><span class="mut">you</span> &nbsp;what can you run?</div>
@@ -90,8 +90,8 @@
       <div class="cell">
         <div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></div>
         <span class="num">04</span>
-        <h3>Ollama, optionally</h3>
-        <p>Already running Ollama? Local Chat detects the server at <span class="mono">127.0.0.1:11434</span> and lets you chat with every model you have pulled.</p>
+        <h3>Ollama &amp; LM Studio</h3>
+        <p>Already running a local server? Local Chat detects Ollama at <span class="mono">127.0.0.1:11434</span> and LM Studio at <span class="mono">127.0.0.1:1234</span>, then lets you chat with every model you have loaded.</p>
       </div>
       <div class="cell">
         <div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 20h14"/></svg></div>
@@ -109,7 +109,7 @@
         <div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg></div>
         <span class="num">07</span>
         <h3>Built-in code editor</h3>
-        <p>Open any project folder and browse, create, edit, rename and delete files from a real editor with syntax highlighting for every major language — Python, JavaScript, C/C++, Go, Rust, HTML, SQL and many more.</p>
+        <p>Open any project folder and browse, create, edit, rename and delete files from a real editor with syntax highlighting for every major language — Python, JavaScript, C/C++, Go, Rust, HTML, SQL and many more. Open a <span class="mono">.zip</span> in the tree to view its contents and extract it in place.</p>
       </div>
       <div class="cell">
         <div class="icon-badge"><svg viewBox="0 0 24 24"><path d="M8 7V4h8v3M4 7h16v13H4zM12 11v5m0 0l-2-2m2 2l2-2"/></svg></div>
@@ -146,6 +146,12 @@
         <h3>llama.cpp</h3>
         <p>The C/C++ inference engine that makes local LLM chat practical. Bundled into Local Chat through the node-llama-cpp bindings.</p>
         <a class="link" href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">github.com/ggml-org/llama.cpp ↗</a>
+      </div>
+      <div class="engine">
+        <div class="logo-tile"><img src="assets/lmstudio.svg" alt="LM Studio" /></div>
+        <h3>LM Studio</h3>
+        <p>Load models in LM Studio, start its local server, and Local Chat speaks the OpenAI-compatible API to list and chat with them — no extra setup.</p>
+        <a class="link" href="https://lmstudio.ai" target="_blank" rel="noopener">lmstudio.ai ↗</a>
       </div>
     </div>
   </div>
@@ -218,6 +224,7 @@
         <h5>Built with</h5>
         <a href="https://huggingface.co" target="_blank" rel="noopener">Hugging Face</a>
         <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>
+        <a href="https://lmstudio.ai" target="_blank" rel="noopener">LM Studio</a>
         <a href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">llama.cpp</a>
       </div>
     </div>
